@@ -1,7 +1,11 @@
 //! glw: glw = glutin + winit
 
+//#![feature(negative_impls)]
+
+#[allow(unused_imports)]
 #[macro_use]
 extern crate log;
+#[allow(unused_imports)]
 #[macro_use]
 extern crate bitflags;
 
@@ -24,8 +28,6 @@ pub mod web;
 pub mod windows;
 
 // 内部实现
-use api::内部接口;
-
 #[cfg(target_os = "android")]
 use android::接口 as 内部;
 #[cfg(target_os = "linux")]
@@ -36,6 +38,8 @@ use web::接口 as 内部;
 use windows::接口 as 内部;
 
 // 导出
+pub use api::{窗口, 窗口创建参数};
+
 // TODO
 
 #[cfg(test)]
