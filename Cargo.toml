@@ -5,7 +5,98 @@ edition = "2021"
 authors = ["sceext <sceext@foxmail.com>"]
 license = "Apache-2.0"
 repository = "https://github.com/vreui/glw"
+rust-version = "1.63.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[package.metadata.docs.rs]
+default-target = "x86_64-unknown-linux-gnu"
+# TODO test in CI
+targets = [
+  # wayland (GNU/Linux)
+  "x86_64-unknown-linux-gnu",
+  # android 9+
+  "aarch64-linux-android",
+  # Windows 7+
+  "x86_64-pc-windows-msvc",
+  # web (wasm)
+  "wasm32-unknown-unknown",
+]
+
 [dependencies]
+bitflags = "^1.3.2"
+log = "^0.4.17"
+once_cell = "^1.14.0"
+mint = "^0.5.9"
+raw-window-handle = "^0.5.0"
+
+[dependencies.instant]
+version = "^0.1.12"
+#features = ["wasm-bindgen"]
+
+[target.'cfg(target_os = "linux")'.dependencies]
+wayland-client = { version = "^0.29.5", default_features = false, features = ["use_system_lib", "dlopen"] }
+wayland-protocols = { version = "^0.29.5", features = ["staging_protocols"] }
+#mio = { version = "^0.8.4", features = ["os-ext"] }
+libc = "^0.2.132"
+
+[target.'cfg(target_os = "android")'.dependencies]
+ndk = "^0.7.0"
+ndk-glue = "^0.7.0"
+
+[target.'cfg(target_os = "windows")'.dependencies.windows-sys]
+version = "^0.36.1"
+features = [
+  "Win32_Devices_HumanInterfaceDevice",
+  "Win32_Foundation",
+  "Win32_Globalization",
+  "Win32_Graphics_Dwm",
+  "Win32_Graphics_Gdi",
+  "Win32_Media",
+  #"Win32_System_Com_StructuredStorage",
+  #"Win32_System_Com",
+  "Win32_System_LibraryLoader",
+  #"Win32_System_Ole",
+  "Win32_System_SystemInformation",
+  "Win32_System_SystemServices",
+  "Win32_System_Threading",
+  "Win32_System_WindowsProgramming",
+  "Win32_UI_Accessibility",
+  "Win32_UI_Controls",
+  "Win32_UI_HiDpi",
+  "Win32_UI_Input_Ime",
+  "Win32_UI_Input_KeyboardAndMouse",
+  "Win32_UI_Input_Pointer",
+  "Win32_UI_Input_Touch",
+  "Win32_UI_Shell",
+  "Win32_UI_TextServices",
+  "Win32_UI_WindowsAndMessaging",
+]
+
+# [target.'cfg(target_arch = "wasm32")'.dependencies.wasm-bindgen]
+# version = "^0.2.82"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies.web-sys]
+version = "^0.3.59"
+features = [
+  "console",
+  "AddEventListenerOptions",
+  "CssStyleDeclaration",
+  "BeforeUnloadEvent",
+  "Document",
+  "DomRect",
+  "Element",
+  "Event",
+  "EventTarget",
+  "FocusEvent",
+  "HtmlCanvasElement",
+  "HtmlElement",
+  "KeyboardEvent",
+  "MediaQueryList",
+  "MediaQueryListEvent",
+  "MouseEvent",
+  "Node",
+  "PointerEvent",
+  "Window",
+  "WheelEvent",
+]
