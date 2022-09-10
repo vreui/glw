@@ -1,0 +1,11 @@
+[package]
+name = "glw"
+version = "0.1.0"
+edition = "2021"
+authors = ["sceext <sceext@foxmail.com>"]
+license = "Apache-2.0"
+repository = "https://github.com/vreui/glw"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
