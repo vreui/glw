@@ -14,6 +14,9 @@ extern crate mint;
 extern crate once_cell;
 extern crate raw_window_handle;
 
+#[cfg(feature = "egl")]
+extern crate libloading;
+
 // 模块
 mod api;
 mod util;

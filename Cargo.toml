@@ -29,6 +29,7 @@ log = "^0.4.17"
 once_cell = "^1.14.0"
 mint = "^0.5.9"
 raw-window-handle = "^0.5.0"
+libloading = { version = "^0.7.3", optional = true }
 
 [dependencies.instant]
 version = "^0.1.12"
@@ -37,6 +38,7 @@ version = "^0.1.12"
 [target.'cfg(target_os = "linux")'.dependencies]
 wayland-client = { version = "^0.29.5", default_features = false, features = ["use_system_lib", "dlopen"] }
 wayland-protocols = { version = "^0.29.5", features = ["staging_protocols"] }
+wayland-sys = { version = "^0.29.5", default-features = false, features = ["egl", "client", "dlopen"] }
 #mio = { version = "^0.8.4", features = ["os-ext"] }
 libc = "^0.2.132"
 
@@ -44,18 +46,46 @@ libc = "^0.2.132"
 ndk = "^0.7.0"
 ndk-glue = "^0.7.0"
 
+# glutin_egl_sys
+[target.'cfg(target_os = "linux")'.dependencies.glutin_egl_sys]
+version = "0.2.0"
+git = "https://github.com/rust-windowing/glutin"
+#path = "../glutin/glutin_egl_sys"
+optional = true
+
+[target.'cfg(target_os = "android")'.dependencies.glutin_egl_sys]
+version = "0.2.0"
+git = "https://github.com/rust-windowing/glutin"
+#path = "../glutin/glutin_egl_sys"
+
+[target.'cfg(target_os = "windows")'.dependencies.glutin_egl_sys]
+version = "0.2.0"
+git = "https://github.com/rust-windowing/glutin"
+#path = "../glutin/glutin_egl_sys"
+optional = true
+
+[target.'cfg(target_os = "windows")'.dependencies.glutin_wgl_sys]
+version = "0.2.0"
+git = "https://github.com/rust-windowing/glutin"
+#path = "../glutin/glutin_wgl_sys"
+optional = true
+
+# windows
 [target.'cfg(target_os = "windows")'.dependencies.windows-sys]
 version = "^0.36.1"
 features = [
-  "Win32_Devices_HumanInterfaceDevice",
   "Win32_Foundation",
+  "Win32_Graphics_Gdi",
+  "Win32_Graphics_OpenGL",
+  "Win32_System_LibraryLoader",
+  "Win32_UI_WindowsAndMessaging",
+
+  "Win32_Devices_HumanInterfaceDevice",
   "Win32_Globalization",
   "Win32_Graphics_Dwm",
-  "Win32_Graphics_Gdi",
   "Win32_Media",
   #"Win32_System_Com_StructuredStorage",
   #"Win32_System_Com",
-  "Win32_System_LibraryLoader",
   #"Win32_System_Ole",
   "Win32_System_SystemInformation",
   "Win32_System_SystemServices",
@@ -70,7 +100,6 @@ features = [
   "Win32_UI_Input_Touch",
   "Win32_UI_Shell",
   "Win32_UI_TextServices",
-  "Win32_UI_WindowsAndMessaging",
 ]
 
 # [target.'cfg(target_arch = "wasm32")'.dependencies.wasm-bindgen]
@@ -100,3 +129,11 @@ features = [
   "Window",
   "WheelEvent",
 ]
+
+[build-dependencies]
+cfg_aliases = "^0.1.1"
+
+[features]
+default = ["egl", "wgl"]
+egl = ["glutin_egl_sys", "libloading"]
+wgl = ["glutin_wgl_sys"]

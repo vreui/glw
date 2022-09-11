@@ -6,15 +6,15 @@ use super::内部::内部窗口;
 
 /// 基础的窗口创建参数
 #[derive(Debug, Clone, Copy)]
-pub struct 窗口创建参数 {
-    pub 标题: &'static str,
+pub struct 窗口创建参数<'a> {
+    pub 标题: &'a str,
     /// 单位: 像素
     pub 大小: (i32, i32),
     /// RGBA [0.0 ~ 1.0]
     pub 背景色: (f32, f32, f32, f32),
 }
 
-impl Default for 窗口创建参数 {
+impl Default for 窗口创建参数<'_> {
     fn default() -> Self {
         Self {
             标题: "",
@@ -25,12 +25,12 @@ impl Default for 窗口创建参数 {
     }
 }
 
-impl 窗口创建参数 {
+impl<'a> 窗口创建参数<'a> {
     pub fn new() -> Self {
         Self::default()
     }
 
-    pub fn 设标题(&self, 标题: &'static str) -> Self {
+    pub fn 设标题(&self, 标题: &'a str) -> Self {
         Self { 标题, ..*self }
     }
 
@@ -60,6 +60,9 @@ pub struct 窗口 {
 //impl !Sync for 窗口 {}
 
 impl 窗口 {
+    /// 创建并初始化窗口
+    ///
+    /// 在创建窗口之前, 本库不会做任何初始化操作.
     pub fn new(参数: 窗口创建参数) -> Self {
         let 内部 = 内部窗口::new(参数);
 
@@ -80,7 +83,7 @@ impl 窗口 {
         self.内部.取标题()
     }
 
-    pub fn 设标题(&mut self, 标题: &'static str) {
+    pub fn 设标题(&mut self, 标题: &str) {
         self.内部.设标题(标题);
     }
 
@@ -104,7 +107,9 @@ impl 窗口 {
         self.内部.主循环();
     }
 
-    // TODO
+    pub fn 清理(self) {
+        self.内部.清理();
+    }
 }
 
 /// 每个平台实现的窗口功能
@@ -114,7 +119,7 @@ pub trait 内部窗口接口 {
     //pub trait 内部窗口接口: !Send + !Sync {
     fn 取标题(&self) -> &str;
 
-    fn 设标题(&mut self, 标题: &'static str);
+    fn 设标题(&mut self, 标题: &str);
 
     fn 取大小(&self) -> (i32, i32);
 
@@ -125,9 +130,12 @@ pub trait 内部窗口接口 {
     fn 设背景色(&mut self, 背景色: (f32, f32, f32, f32));
 
     /// 默认主循环 (空窗口)
+    ///
+    /// 直到窗口关闭, 才会返回.
     fn 主循环(&mut self);
 
-    // TODO
+    /// 用于销毁窗口
+    fn 清理(self);
 }
 
 // TODO

@@ -35,6 +35,8 @@ glw (计划) 支持下列平台 (协议):
 
 + `wayland` (GNU/Linux)
 
+  为了本库的轻量, 在 GNU/Linux 平台不会依赖 gtk/qt 等库.
+
 + `android` 9+
 
 + `windows` 7+

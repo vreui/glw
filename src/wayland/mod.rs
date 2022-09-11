@@ -3,6 +3,10 @@
 extern crate libc;
 extern crate wayland_client;
 extern crate wayland_protocols;
+extern crate wayland_sys;
+
+#[cfg(feature = "egl")]
+extern crate glutin_egl_sys;
 
 pub mod 接口 {
     use std::rc::Rc;
@@ -33,7 +37,7 @@ pub mod 接口 {
             return &"";
         }
 
-        fn 设标题(&mut self, _标题: &'static str) {
+        fn 设标题(&mut self, _标题: &str) {
             // TODO
         }
 
@@ -56,6 +60,10 @@ pub mod 接口 {
         }
 
         fn 主循环(&mut self) {
+            // TODO
+        }
+
+        fn 清理(self) {
             // TODO
         }
     }
