@@ -9,7 +9,7 @@ use wayland_client::{
 use wayland_protocols::xdg_shell::client::{xdg_surface, xdg_toplevel, xdg_wm_base};
 
 use super::input::输入管理器;
-use super::util::{创建匿名文件, 填充缓冲区};
+use super::util::{创建匿名文件, 填充缓冲区, 最小窗口大小};
 
 // 对 wayland 操作的封装
 //
@@ -144,22 +144,15 @@ impl Wl封装 {
                     "xdg_toplevel (Configure)  {} x {}  ({:?})",
                     width, height, states
                 );
+                // TODO 支持改变窗口大小
 
                 // 保存窗口大小
                 窗口大小1.replace((width as f32, height as f32));
             }
             _ => unreachable!(),
         });
+        xdg顶级.set_min_size(最小窗口大小.0, 最小窗口大小.1);
         xdg顶级.set_title(标题);
-
-        let 移动窗口 = move |偏移: (f64, f64)| {
-            println!("移动窗口  偏移 {:?}", 偏移);
-            // TODO
-        };
-        let 改变大小 = move |偏移: (f64, f64), 大小: (f32, f32)| {
-            println!("改变大小  补偿偏移 {:?}  窗口大小 {:?}", 偏移, 大小);
-            // TODO
-        };
 
         // 输入处理
         let 输入 = 输入管理器::new(
@@ -167,8 +160,7 @@ impl Wl封装 {
             self.共享内存.clone(),
             self.合成器.clone(),
             self.窗口大小.clone(),
-            Box::new(移动窗口),
-            Box::new(改变大小),
+            xdg顶级.clone(),
         );
         self.输入 = Some(输入);
 

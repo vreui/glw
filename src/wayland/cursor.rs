@@ -3,10 +3,11 @@
 use std::{cell::RefCell, rc::Rc};
 
 use wayland_client::{
-    protocol::{wl_compositor, wl_pointer, wl_shm, wl_surface},
+    protocol::{wl_compositor, wl_pointer, wl_seat, wl_shm, wl_surface},
     Main,
 };
 use wayland_cursor::{Cursor, CursorTheme};
+use wayland_protocols::xdg_shell::client::xdg_toplevel;
 
 use super::util::窗口区域;
 
@@ -50,18 +51,6 @@ fn 取指针<'a>(鼠标主题: &'a mut CursorTheme, 类型: 指针类型) -> &'a
     }
 }
 
-// 用于 移动窗口/改变大小
-#[derive(Debug, Clone, Copy)]
-enum 边框状态 {
-    移动 {
-        // 开始时的鼠标坐标
-        起点: (f64, f64),
-    },
-    大小 {
-        起点: (f64, f64), 类型: 窗口区域
-    },
-}
-
 pub struct 指针管理器 {
     窗口大小: Rc<RefCell<(f32, f32)>>,
 
@@ -78,18 +67,11 @@ pub struct 指针管理器 {
     // wl_pointer::Event::Enter.serial
     序号: u32,
 
-    // 鼠标最后出现的坐标
+    // 用于 移动窗口/改变窗口大小
+    座: Main<wl_seat::WlSeat>,
+    xdg顶级: Main<xdg_toplevel::XdgToplevel>,
+    // 鼠标最后所在的坐标
     坐标: (f64, f64),
-
-    // None 表示没有 移动窗口/改变大小 (普通状态)
-    状态: Option<边框状态>,
-
-    // 回调: 移动窗口
-    // FnMut(偏移: (f64, f64))
-    移动窗口: Box<dyn FnMut((f64, f64)) -> () + 'static>,
-    // 回调: 改变大小
-    // FnMut(偏移: (f64, f64), 大小: (f32, f32))
-    改变大小: Box<dyn FnMut((f64, f64), (f32, f32)) -> () + 'static>,
 }
 
 impl 指针管理器 {
@@ -97,10 +79,10 @@ impl 指针管理器 {
         鼠标: Main<wl_pointer::WlPointer>,
         共享内存: Main<wl_shm::WlShm>,
         合成器: Main<wl_compositor::WlCompositor>,
+        座: Main<wl_seat::WlSeat>,
+        xdg顶级: Main<xdg_toplevel::XdgToplevel>,
         窗口大小: Rc<RefCell<(f32, f32)>>,
         指针大小: u32,
-        移动窗口: Box<dyn FnMut((f64, f64)) -> () + 'static>,
-        改变大小: Box<dyn FnMut((f64, f64), (f32, f32)) -> () + 'static>,
     ) -> Self {
         let mut 鼠标主题 = CursorTheme::load(指针大小, &共享内存);
         // 预加载指针图标
@@ -125,11 +107,9 @@ impl 指针管理器 {
             鼠标表面,
 
             序号: 0,
+            座,
+            xdg顶级,
             坐标: (0.0, 0.0),
-            状态: None,
-
-            移动窗口,
-            改变大小,
         }
     }
 
@@ -196,7 +176,7 @@ impl 指针管理器 {
     pub fn 鼠标进入(&mut self, 序号: u32, x: f64, y: f64) {
         // 首先保存进入序号
         self.序号 = 序号;
-        // 保存鼠标坐标
+        // 保存坐标
         self.坐标 = (x, y);
 
         self.检查鼠标区域(Some((x as f32, y as f32)));
@@ -208,110 +188,65 @@ impl 指针管理器 {
     // wl_pointer::Event::Leave
     pub fn 鼠标离开(&mut self) {
         self.检查鼠标区域(None);
-
-        self.状态 = None;
     }
 
     // wl_pointer::Event::Motion
     pub fn 鼠标移动(&mut self, x: f64, y: f64) {
-        // 保存鼠标坐标
+        // 保存坐标
         self.坐标 = (x, y);
 
         self.检查鼠标区域(Some((x as f32, y as f32)));
 
         // 根据区域设置不同的鼠标指针
         self.设置边框指针();
-
-        // 处理边框状态
-        match self.状态 {
-            None => {}
-            Some(s) => {
-                match s {
-                    边框状态::移动 { 起点 } => {
-                        let 偏移 = (x - 起点.0, y - 起点.1);
-                        (self.移动窗口)(偏移);
-                    }
-                    边框状态::大小 { 起点, 类型 } => {
-                        let 偏移 = (x - 起点.0, y - 起点.1);
-                        // 窗口左上角应该移动的偏移
-                        let mut 补偿偏移: (f64, f64) = (0.0, 0.0);
-                        // 新的窗口大小
-                        let mut 窗口大小 = self.窗口大小.borrow().clone();
-
-                        match 类型 {
-                            窗口区域::下边框 => {
-                                窗口大小 = (窗口大小.0, 窗口大小.1 + 偏移.1 as f32);
-                            }
-                            窗口区域::左边框 => {
-                                补偿偏移 = (偏移.0, 0.0);
-                                窗口大小 = (窗口大小.0 - 偏移.0 as f32, 窗口大小.1);
-                            }
-                            窗口区域::右边框 => {
-                                窗口大小 = (窗口大小.0 + 偏移.0 as f32, 窗口大小.1);
-                            }
-
-                            窗口区域::左上角 => {
-                                补偿偏移 = (偏移.0, 偏移.1);
-                                窗口大小 = (窗口大小.0 - 偏移.0 as f32, 窗口大小.1 - 偏移.1 as f32);
-                            }
-                            窗口区域::右下角 => {
-                                窗口大小 = (窗口大小.0 + 偏移.0 as f32, 窗口大小.1 + 偏移.1 as f32);
-                            }
-                            窗口区域::右上角 => {
-                                补偿偏移 = (0.0, 偏移.1);
-                                窗口大小 = (窗口大小.0 + 偏移.0 as f32, 窗口大小.1 - 偏移.1 as f32);
-                            }
-                            窗口区域::左下角 => {
-                                补偿偏移 = (偏移.0, 0.0);
-                                窗口大小 = (窗口大小.0 - 偏移.0 as f32, 窗口大小.1 + 偏移.1 as f32);
-                            }
-
-                            _ => {}
-                        }
-
-                        (self.改变大小)(补偿偏移, 窗口大小);
-                    }
-                }
-            }
-        }
     }
 
     // wl_pointer::Event::Button
-    pub fn 鼠标按键(&mut self, 按键: u32, 状态: wl_pointer::ButtonState) {
-        // 检查边框状态, 只处理 左键
-        if 按键 == 鼠标左键 {
-            match 状态 {
-                wl_pointer::ButtonState::Released => {
-                    self.状态 = None;
-                }
+    pub fn 鼠标按键(&mut self, 按键: u32, 状态: wl_pointer::ButtonState, 序号: u32) {
+        // 处理边框 (移动/改变大小 等)
+        match 按键 {
+            // 左键: 用于 移动窗口/改变大小
+            鼠标左键 => match 状态 {
+                // 按下左键
                 wl_pointer::ButtonState::Pressed => match self.鼠标位于 {
-                    None => {
-                        self.状态 = None;
-                    }
                     Some(类型) => match 类型 {
-                        窗口区域::内容 => {
-                            self.状态 = None;
-                        }
+                        窗口区域::内容 => {}
                         窗口区域::上边框 => {
-                            self.状态 = Some(边框状态::移动 {
-                                起点: self.坐标
-                            });
+                            // 移动
+                            self.xdg顶级._move(&self.座, 序号);
                         }
                         _ => {
-                            self.状态 = Some(边框状态::大小 {
-                                起点: self.坐标,
-                                类型,
-                            });
+                            // 改变大小
+                            // TODO
                         }
                     },
+                    _ => {}
                 },
                 _ => {}
-            }
+            },
 
-            // DEBUG
-            println!("{:?}", self.状态);
+            // 右键: 顶部窗口菜单
+            鼠标右键 => match 状态 {
+                // 在顶部按下右键
+                wl_pointer::ButtonState::Pressed => match self.鼠标位于 {
+                    Some(类型) => match 类型 {
+                        窗口区域::上边框 => {
+                            // 窗口菜单
+                            self.xdg顶级.show_window_menu(
+                                &self.座,
+                                序号,
+                                self.坐标.0 as i32,
+                                self.坐标.1 as i32,
+                            );
+                        }
+                        _ => {}
+                    },
+                    _ => {}
+                },
+                _ => {}
+            },
+
+            _ => {}
         }
-
-        // TODO
     }
 }

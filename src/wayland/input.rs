@@ -7,6 +7,7 @@ use wayland_client::{
     protocol::{wl_compositor, wl_keyboard, wl_pointer, wl_seat, wl_shm},
     Filter, GlobalManager, Main,
 };
+use wayland_protocols::xdg_shell::client::xdg_toplevel;
 
 use super::cursor::指针管理器;
 
@@ -31,8 +32,7 @@ impl 输入管理器 {
         共享内存: Main<wl_shm::WlShm>,
         合成器: Main<wl_compositor::WlCompositor>,
         窗口大小: Rc<RefCell<(f32, f32)>>,
-        移动窗口: Box<dyn FnMut((f64, f64)) -> () + 'static>,
-        改变大小: Box<dyn FnMut((f64, f64), (f32, f32)) -> () + 'static>,
+        xdg顶级: Main<xdg_toplevel::XdgToplevel>,
     ) -> Self {
         let 指针: Rc<RefCell<Option<指针管理器>>> = Rc::new(RefCell::new(None));
 
@@ -73,12 +73,17 @@ impl 输入管理器 {
                     let 指针 = 指针2.as_mut().unwrap();
                     指针.鼠标移动(surface_x, surface_y);
                 }
-                wl_pointer::Event::Button { button, state, .. } => {
+                wl_pointer::Event::Button {
+                    button,
+                    state,
+                    serial,
+                    ..
+                } => {
                     println!("鼠标按键  {}  ({:?})", button, state);
 
                     let mut 指针2 = 指针1.borrow_mut();
                     let 指针 = 指针2.as_mut().unwrap();
-                    指针.鼠标按键(button, state);
+                    指针.鼠标按键(button, state, serial);
                 }
                 _ => {}
             },
@@ -100,9 +105,8 @@ impl 输入管理器 {
         // TODO 处理 鼠标/键盘 动态添加移除
         let 指针1 = 指针.clone();
         let 键盘1 = 键盘.clone();
+        let 座1 = 座.clone();
         let 窗口大小1 = 窗口大小.clone();
-        let mut 移动窗口 = Some(移动窗口);
-        let mut 改变大小 = Some(改变大小);
         座.quick_assign(move |座, 事件, _| match 事件 {
             wl_seat::Event::Capabilities { capabilities } => {
                 // 鼠标和键盘只创建一次
@@ -115,10 +119,10 @@ impl 输入管理器 {
                         鼠标,
                         共享内存.clone(),
                         合成器.clone(),
+                        座1.clone(),
+                        xdg顶级.clone(),
                         窗口大小1.clone(),
                         32,
-                        移动窗口.take().unwrap(),
-                        改变大小.take().unwrap(),
                     );
                     指针1.replace(Some(指针));
                 }
