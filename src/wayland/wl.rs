@@ -155,8 +155,8 @@ impl Wl封装 {
         // 输入处理
         let 输入 = 输入管理器::new(
             &self.全局管理,
-            &self.共享内存,
-            &self.合成器,
+            self.共享内存.clone(),
+            self.合成器.clone(),
             self.窗口大小.clone(),
         );
         self.输入 = Some(输入);

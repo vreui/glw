@@ -12,6 +12,7 @@ extern crate wayland_egl;
 #[cfg(feature = "egl")]
 extern crate glutin_egl_sys;
 
+mod cursor;
 mod input;
 mod util;
 mod wl;
