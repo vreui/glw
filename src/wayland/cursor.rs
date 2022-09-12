@@ -10,6 +10,12 @@ use wayland_cursor::{Cursor, CursorTheme};
 
 use super::util::窗口区域;
 
+// 鼠标按键
+// wl_pointer::Event::Button.button
+pub const 鼠标左键: u32 = 0x110; // 272
+pub const 鼠标右键: u32 = 0x111; // 273
+pub const 鼠标中键: u32 = 0x112; // 274
+
 #[derive(Debug, Clone, Copy)]
 pub enum 指针类型<'a> {
     默认,
@@ -44,6 +50,13 @@ fn 取指针<'a>(鼠标主题: &'a mut CursorTheme, 类型: 指针类型) -> &'a
     }
 }
 
+// 用于 移动窗口/改变大小
+#[derive(Debug, Clone, Copy)]
+enum 边框状态 {
+    移动,
+    大小(窗口区域),
+}
+
 pub struct 指针管理器 {
     窗口大小: Rc<RefCell<(f32, f32)>>,
 
@@ -59,6 +72,9 @@ pub struct 指针管理器 {
 
     // wl_pointer::Event::Enter.serial
     序号: u32,
+
+    // None 表示没有 移动窗口/改变大小 (普通状态)
+    状态: Option<边框状态>,
 }
 
 impl 指针管理器 {
@@ -92,6 +108,7 @@ impl 指针管理器 {
             鼠标表面,
 
             序号: 0,
+            状态: None,
         }
     }
 
@@ -168,6 +185,8 @@ impl 指针管理器 {
     // wl_pointer::Event::Leave
     pub fn 鼠标离开(&mut self) {
         self.检查鼠标区域(None);
+
+        self.状态 = None;
     }
 
     // wl_pointer::Event::Motion
@@ -176,10 +195,75 @@ impl 指针管理器 {
 
         // 根据区域设置不同的鼠标指针
         self.设置边框指针();
+
+        // 处理边框状态
+        match self.状态 {
+            None => {}
+            Some(s) => match s {
+                边框状态::移动 => {
+                    // TODO
+                }
+                边框状态::大小(a) => match a {
+                    窗口区域::下边框 => {
+                        // TODO
+                    }
+                    窗口区域::左边框 => {
+                        // TODO
+                    }
+                    窗口区域::右边框 => {
+                        // TODO
+                    }
+
+                    窗口区域::左上角 => {
+                        // TODO
+                    }
+                    窗口区域::右下角 => {
+                        // TODO
+                    }
+                    窗口区域::右上角 => {
+                        // TODO
+                    }
+                    窗口区域::左下角 => {
+                        // TODO
+                    }
+
+                    _ => {}
+                },
+            },
+        }
     }
 
     // wl_pointer::Event::Button
-    pub fn 鼠标按键(&mut self, _按键: u32, _状态: wl_pointer::ButtonState) {
+    pub fn 鼠标按键(&mut self, 按键: u32, 状态: wl_pointer::ButtonState) {
+        // 检查边框状态, 只处理 左键
+        if 按键 == 鼠标左键 {
+            match 状态 {
+                wl_pointer::ButtonState::Released => {
+                    self.状态 = None;
+                }
+                wl_pointer::ButtonState::Pressed => match self.鼠标位于 {
+                    None => {
+                        self.状态 = None;
+                    }
+                    Some(a) => match a {
+                        窗口区域::内容 => {
+                            self.状态 = None;
+                        }
+                        窗口区域::上边框 => {
+                            self.状态 = Some(边框状态::移动);
+                        }
+                        _ => {
+                            self.状态 = Some(边框状态::大小(a));
+                        }
+                    },
+                },
+                _ => {}
+            }
+
+            // DEBUG
+            println!("{:?}", self.状态);
+        }
+
         // TODO
     }
 }
