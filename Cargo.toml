@@ -55,25 +55,23 @@ ndk-glue = "^0.7.0"
 # glutin_egl_sys
 [target.'cfg(target_os = "linux")'.dependencies.glutin_egl_sys]
 version = "0.2.0"
-#git = "https://github.com/rust-windowing/glutin"
-path = "../glutin/glutin_egl_sys"
+git = "https://github.com/rust-windowing/glutin"
+#path = "../glutin/glutin_egl_sys"
 optional = true
 
 [target.'cfg(target_os = "android")'.dependencies.glutin_egl_sys]
 version = "0.2.0"
-#git = "https://github.com/rust-windowing/glutin"
-path = "../glutin/glutin_egl_sys"
+git = "https://github.com/rust-windowing/glutin"
+#path = "../glutin/glutin_egl_sys"
 
 [target.'cfg(target_os = "windows")'.dependencies.glutin_egl_sys]
 version = "0.2.0"
-#git = "https://github.com/rust-windowing/glutin"
-path = "../glutin/glutin_egl_sys"
+git = "https://github.com/rust-windowing/glutin"
 optional = true
 
 [target.'cfg(target_os = "windows")'.dependencies.glutin_wgl_sys]
 version = "0.2.0"
-#git = "https://github.com/rust-windowing/glutin"
-path = "../glutin/glutin_wgl_sys"
+git = "https://github.com/rust-windowing/glutin"
 optional = true
 
 # windows
