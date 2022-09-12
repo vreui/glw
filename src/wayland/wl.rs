@@ -3,19 +3,13 @@
 use std::{cell::RefCell, fs::File, os::unix::io::AsRawFd, rc::Rc};
 
 use wayland_client::{
-    event_enum,
-    protocol::{wl_buffer, wl_compositor, wl_keyboard, wl_pointer, wl_seat, wl_shm, wl_surface},
-    Display, EventQueue, Filter, GlobalManager, Main,
+    protocol::{wl_buffer, wl_compositor, wl_shm, wl_surface},
+    Display, EventQueue, GlobalManager, Main,
 };
 use wayland_protocols::xdg_shell::client::{xdg_surface, xdg_toplevel, xdg_wm_base};
 
-use super::util::{创建匿名文件, 填充缓冲区, 窗口区域};
-
-event_enum!(
-  Events |
-  Pointer => wl_pointer::WlPointer,
-  Keyboard => wl_keyboard::WlKeyboard
-);
+use super::input::输入管理器;
+use super::util::{创建匿名文件, 填充缓冲区};
 
 // 对 wayland 操作的封装
 //
@@ -35,6 +29,10 @@ pub struct Wl封装 {
     合成器: Main<wl_compositor::WlCompositor>,
     共享内存: Main<wl_shm::WlShm>,
     窗基: Main<xdg_wm_base::XdgWmBase>,
+
+    // 保存内部状态
+    窗口大小: Rc<RefCell<(f32, f32)>>,
+    输入: Option<输入管理器>,
 }
 
 impl Wl封装 {
@@ -74,6 +72,9 @@ impl Wl封装 {
             合成器,
             共享内存,
             窗基,
+
+            窗口大小: Rc::new(RefCell::new((0.0, 0.0))),
+            输入: None,
         }
     }
 
@@ -124,9 +125,8 @@ impl Wl封装 {
             _ => unreachable!(),
         });
 
-        // TODO 保存窗口大小
-        let 窗口大小: Rc<RefCell<(f32, f32)>> = Rc::new(RefCell::new((0.0, 0.0)));
-        let 窗口大小1 = 窗口大小.clone();
+        // 保存窗口大小
+        let 窗口大小1 = self.窗口大小.clone();
 
         let xdg顶级 = xdg表面.get_toplevel();
         xdg顶级.quick_assign(move |_, 事件, _| match 事件 {
@@ -134,8 +134,6 @@ impl Wl封装 {
             xdg_toplevel::Event::Close => {
                 // 设置退出标志
                 运行标志.replace(false);
-
-                println!("关闭窗口");
             }
             xdg_toplevel::Event::Configure {
                 width,
@@ -154,88 +152,14 @@ impl Wl封装 {
         });
         xdg顶级.set_title(标题);
 
-        // 事件处理器
-        let mut 当前鼠标位于: Option<窗口区域> = None;
-
-        let 测试窗口区域 = move |x: f64, y: f64| -> 窗口区域 {
-            // DEBUG
-            let 结果 = 窗口区域::测试((x as f32, y as f32), 窗口大小.borrow().clone());
-            match 结果 {
-                窗口区域::内容 => {}
-                _ => println!("{:?}", 结果),
-            }
-            结果
-        };
-
-        let 过滤器 = Filter::new(move |事件, _, _| {
-            // TODO
-            match 事件 {
-                // 鼠标事件
-                Events::Pointer { event, .. } => match event {
-                    wl_pointer::Event::Enter {
-                        surface_x,
-                        surface_y,
-                        ..
-                    } => {
-                        println!("鼠标进入  ({}, {})", surface_x, surface_y);
-
-                        当前鼠标位于 = Some(测试窗口区域(surface_x, surface_y));
-                    }
-                    wl_pointer::Event::Leave { .. } => {
-                        println!("鼠标离开");
-
-                        当前鼠标位于 = None;
-                    }
-                    wl_pointer::Event::Motion {
-                        surface_x,
-                        surface_y,
-                        ..
-                    } => {
-                        println!("鼠标移动  ({}, {})", surface_x, surface_y);
-
-                        当前鼠标位于 = Some(测试窗口区域(surface_x, surface_y))
-                    }
-                    wl_pointer::Event::Button { button, state, .. } => {
-                        println!("鼠标按键  {}  ({:?})", button, state);
-                    }
-                    _ => {}
-                },
-                // 键盘事件
-                Events::Keyboard { event, .. } => match event {
-                    wl_keyboard::Event::Enter { .. } => {
-                        println!("键盘获得焦点");
-                    }
-                    wl_keyboard::Event::Leave { .. } => {
-                        println!("键盘失去焦点");
-                    }
-                    wl_keyboard::Event::Key { key, state, .. } => {
-                        println!("键盘按键  {}  ({:?})", key, state);
-                    }
-                    _ => {}
-                },
-            }
-        });
-
-        // TODO 处理键盘/鼠标动态添加移除
-        let mut 鼠标已创建 = false;
-        let mut 键盘已创建 = false;
-        self.全局管理
-            .instantiate_exact::<wl_seat::WlSeat>(1)
-            .unwrap()
-            .quick_assign(move |座, 事件, _| match 事件 {
-                wl_seat::Event::Capabilities { capabilities } => {
-                    // 鼠标和键盘只创建一次
-                    if !鼠标已创建 && capabilities.contains(wl_seat::Capability::Pointer) {
-                        座.get_pointer().assign(过滤器.clone());
-                        鼠标已创建 = true;
-                    }
-                    if !键盘已创建 && capabilities.contains(wl_seat::Capability::Keyboard) {
-                        座.get_keyboard().assign(过滤器.clone());
-                        键盘已创建 = true;
-                    }
-                }
-                _ => {}
-            });
+        // 输入处理
+        let 输入 = 输入管理器::new(
+            &self.全局管理,
+            &self.共享内存,
+            &self.合成器,
+            self.窗口大小.clone(),
+        );
+        self.输入 = Some(输入);
 
         // 提交表面, 同步 wayland 服务器
         表面.commit();

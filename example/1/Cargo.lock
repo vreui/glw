@@ -115,6 +115,7 @@ dependencies = [
 [[package]]
 name = "glutin_egl_sys"
 version = "0.2.0"
+source = "git+https://github.com/rust-windowing/glutin#24812ca627283b1d9189cd46d8a450eea108e68d"
 dependencies = [
  "gl_generator",
  "windows-sys",

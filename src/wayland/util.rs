@@ -67,7 +67,7 @@ pub fn 填充缓冲区(文件: &mut File, 大小: (u32, u32), 颜色: (f32, f32,
 // 鼠标位于窗口的区域
 //
 // 用于移动窗口/调整窗口大小
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum 窗口区域 {
     // 用于移动窗口
     上边框,
