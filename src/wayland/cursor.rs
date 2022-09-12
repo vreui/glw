@@ -99,20 +99,10 @@ impl 指针管理器 {
     fn 检查鼠标区域(&mut self, 坐标: Option<(f32, f32)>) -> bool {
         let 之前 = self.鼠标位于.clone();
 
-        match 坐标 {
-            None => {
-                self.鼠标位于 = None;
-            }
-            Some(p) => {
-                let 结果 = Some(窗口区域::测试(p, self.窗口大小.borrow().clone()));
-                // DEBUG
-                if 结果 != 之前 {
-                    println!("{:?}", 结果);
-                }
-
-                self.鼠标位于 = 结果;
-            }
-        }
+        self.鼠标位于 = match 坐标 {
+            None => None,
+            Some(p) => Some(窗口区域::测试(p, self.窗口大小.borrow().clone())),
+        };
 
         self.鼠标位于 != 之前
     }
@@ -144,6 +134,26 @@ impl 指针管理器 {
         );
     }
 
+    fn 设置边框指针(&mut self) {
+        let 类型 = match self.鼠标位于 {
+            None => None,
+            Some(a) => match a {
+                窗口区域::内容 => Some(指针类型::默认),
+                窗口区域::上边框 => Some(指针类型::移动),
+                窗口区域::下边框 => Some(指针类型::箭头上下),
+                窗口区域::左边框 | 窗口区域::右边框 => Some(指针类型::箭头左右),
+                窗口区域::左上角 | 窗口区域::右下角 => Some(指针类型::箭头左上右下),
+                窗口区域::右上角 | 窗口区域::左下角 => Some(指针类型::箭头左下右上),
+            },
+        };
+        match 类型 {
+            None => {}
+            Some(p) => {
+                self.设置鼠标指针(p);
+            }
+        }
+    }
+
     // wl_pointer::Event::Enter
     pub fn 鼠标进入(&mut self, 序号: u32, x: f64, y: f64) {
         // 首先保存进入序号
@@ -151,8 +161,8 @@ impl 指针管理器 {
 
         self.检查鼠标区域(Some((x as f32, y as f32)));
 
-        // TODO 根据区域设置不同的鼠标指针
-        self.设置鼠标指针(指针类型::默认);
+        // 根据区域设置不同的鼠标指针
+        self.设置边框指针();
     }
 
     // wl_pointer::Event::Leave
@@ -164,7 +174,8 @@ impl 指针管理器 {
     pub fn 鼠标移动(&mut self, x: f64, y: f64) {
         self.检查鼠标区域(Some((x as f32, y as f32)));
 
-        // TODO
+        // 根据区域设置不同的鼠标指针
+        self.设置边框指针();
     }
 
     // wl_pointer::Event::Button

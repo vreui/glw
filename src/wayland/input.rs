@@ -67,8 +67,6 @@ impl 输入管理器 {
                     surface_y,
                     ..
                 } => {
-                    println!("鼠标移动  ({}, {})", surface_x, surface_y);
-
                     let mut 指针2 = 指针1.borrow_mut();
                     let 指针 = 指针2.as_mut().unwrap();
                     指针.鼠标移动(surface_x, surface_y);
