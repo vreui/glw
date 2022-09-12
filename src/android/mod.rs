@@ -6,7 +6,7 @@ extern crate ndk_glue;
 #[cfg(feature = "egl")]
 extern crate glutin_egl_sys;
 
-pub mod 接口 {
+pub(crate) mod 接口 {
     // TODO
 }
 

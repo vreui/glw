@@ -103,20 +103,24 @@ impl 窗口 {
         self.内部.设背景色(背景色);
     }
 
+    /// 默认主循环 (空窗口)
+    ///
+    /// 直到窗口关闭, 才会返回.
     pub fn 主循环(&mut self) {
         self.内部.主循环();
     }
 
+    /// 用于销毁窗口
     pub fn 清理(self) {
         self.内部.清理();
     }
 }
 
+//pub trait 内部窗口接口: !Send + !Sync {
 /// 每个平台实现的窗口功能
 ///
 /// 非线程安全 (仅单线程): !Send + !Sync
 pub trait 内部窗口接口 {
-    //pub trait 内部窗口接口: !Send + !Sync {
     fn 取标题(&self) -> &str;
 
     fn 设标题(&mut self, 标题: &str);

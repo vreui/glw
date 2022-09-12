@@ -2,7 +2,7 @@
 
 extern crate web_sys;
 
-pub mod 接口 {
+pub(crate) mod 接口 {
     // TODO
 }
 
