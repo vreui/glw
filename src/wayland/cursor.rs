@@ -51,6 +51,7 @@ fn 取指针<'a>(鼠标主题: &'a mut CursorTheme, 类型: 指针类型) -> &'a
     }
 }
 
+#[derive(Debug)]
 pub struct 指针管理器 {
     窗口大小: Rc<RefCell<(f32, f32)>>,
 
@@ -217,7 +218,17 @@ impl 指针管理器 {
                         }
                         _ => {
                             // 改变大小
-                            // TODO
+                            let 情况 = match 类型 {
+                                窗口区域::下边框 => xdg_toplevel::ResizeEdge::Bottom,
+                                窗口区域::左边框 => xdg_toplevel::ResizeEdge::Left,
+                                窗口区域::右边框 => xdg_toplevel::ResizeEdge::Right,
+                                窗口区域::左上角 => xdg_toplevel::ResizeEdge::TopLeft,
+                                窗口区域::左下角 => xdg_toplevel::ResizeEdge::BottomLeft,
+                                窗口区域::右上角 => xdg_toplevel::ResizeEdge::TopRight,
+                                窗口区域::右下角 => xdg_toplevel::ResizeEdge::BottomRight,
+                                _ => xdg_toplevel::ResizeEdge::None,
+                            };
+                            self.xdg顶级.resize(&self.座, 序号, 情况);
                         }
                     },
                     _ => {}

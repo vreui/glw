@@ -12,6 +12,7 @@ extern crate wayland_egl;
 #[cfg(feature = "egl")]
 extern crate glutin_egl_sys;
 
+mod buffer;
 mod cursor;
 mod input;
 mod util;
@@ -26,6 +27,7 @@ pub(crate) mod 接口 {
     };
     use wayland_protocols::xdg_shell::client::xdg_toplevel;
 
+    use super::buffer::缓冲区管理器;
     use super::wl::Wl封装;
     use crate::api::{内部窗口接口, 窗口创建参数};
 
@@ -35,14 +37,14 @@ pub(crate) mod 接口 {
         非线程安全: Rc<()>,
 
         标题: String,
-        背景色: (f32, f32, f32, f32),
+        背景色: Rc<RefCell<(f32, f32, f32, f32)>>,
 
         wl: Wl封装,
         运行标志: Rc<RefCell<bool>>,
 
-        缓冲区: Main<wl_buffer::WlBuffer>,
+        缓冲区: Rc<RefCell<Option<Main<wl_buffer::WlBuffer>>>>,
         // 共享内存缓冲区
-        缓冲区文件: File,
+        缓冲区文件: Rc<RefCell<Option<File>>>,
 
         表面: Main<wl_surface::WlSurface>,
         xdg顶级: Main<xdg_toplevel::XdgToplevel>,
@@ -52,20 +54,47 @@ pub(crate) mod 接口 {
         pub fn new(参数: 窗口创建参数) -> Self {
             let mut wl = Wl封装::new();
 
-            // 创建缓冲区
-            let (缓冲区, 缓冲区文件) = wl
-                .创建共享内存缓冲区((参数.大小.0 as u32, 参数.大小.1 as u32), 参数.背景色);
+            let 背景色 = Rc::new(RefCell::new(参数.背景色));
+            let 缓冲区: Rc<RefCell<Option<Main<wl_buffer::WlBuffer>>>> =
+                Rc::new(RefCell::new(None));
+            let 缓冲区文件: Rc<RefCell<Option<File>>> = Rc::new(RefCell::new(None));
+
             // TODO 支持 EGL 缓冲区
+            let 背景色1 = 背景色.clone();
+            let 缓冲区1 = 缓冲区.clone();
+            let 缓冲区文件1 = 缓冲区文件.clone();
+            let 创建缓冲区 =
+                move |缓冲: &mut 缓冲区管理器, 大小: (f32, f32)| -> Main<wl_buffer::WlBuffer> {
+                    let (缓冲区, 缓冲区文件) = 缓冲.创建共享内存缓冲区(
+                        (大小.0 as u32, 大小.1 as u32),
+                        背景色1.borrow().clone(),
+                    );
+
+                    match 缓冲区1.replace(Some(缓冲区.clone())) {
+                        Some(缓冲区) => {
+                            缓冲区.destroy();
+                        }
+                        _ => {}
+                    }
+                    缓冲区文件1.replace(Some(缓冲区文件));
+
+                    缓冲区
+                };
 
             let 运行标志 = Rc::new(RefCell::new(false));
             // 创建窗口
-            let (表面, xdg顶级) = wl.创建窗口(运行标志.clone(), 参数.标题.to_string(), &缓冲区);
+            let (表面, xdg顶级) = wl.创建窗口(
+                运行标志.clone(),
+                参数.标题.to_string(),
+                Box::new(创建缓冲区),
+                (参数.大小.0 as f32, 参数.大小.1 as f32),
+            );
 
             Self {
                 非线程安全: Rc::new(()),
 
                 标题: 参数.标题.to_string(),
-                背景色: 参数.背景色,
+                背景色,
 
                 wl,
                 运行标志,
@@ -102,11 +131,11 @@ pub(crate) mod 接口 {
         }
 
         fn 取背景色(&self) -> (f32, f32, f32, f32) {
-            self.背景色
+            self.背景色.borrow().clone()
         }
 
         fn 设背景色(&mut self, 背景色: (f32, f32, f32, f32)) {
-            self.背景色 = 背景色;
+            self.背景色.replace(背景色);
         }
 
         fn 主循环(&mut self) {

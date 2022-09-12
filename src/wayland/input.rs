@@ -17,6 +17,7 @@ event_enum!(
   Keyboard => wl_keyboard::WlKeyboard
 );
 
+#[derive(Debug)]
 pub struct 输入管理器 {
     座: Main<wl_seat::WlSeat>,
 
