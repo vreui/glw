@@ -152,12 +152,23 @@ impl Wl封装 {
         });
         xdg顶级.set_title(标题);
 
+        let 移动窗口 = move |偏移: (f64, f64)| {
+            println!("移动窗口  偏移 {:?}", 偏移);
+            // TODO
+        };
+        let 改变大小 = move |偏移: (f64, f64), 大小: (f32, f32)| {
+            println!("改变大小  补偿偏移 {:?}  窗口大小 {:?}", 偏移, 大小);
+            // TODO
+        };
+
         // 输入处理
         let 输入 = 输入管理器::new(
             &self.全局管理,
             self.共享内存.clone(),
             self.合成器.clone(),
             self.窗口大小.clone(),
+            Box::new(移动窗口),
+            Box::new(改变大小),
         );
         self.输入 = Some(输入);
 

@@ -31,6 +31,8 @@ impl 输入管理器 {
         共享内存: Main<wl_shm::WlShm>,
         合成器: Main<wl_compositor::WlCompositor>,
         窗口大小: Rc<RefCell<(f32, f32)>>,
+        移动窗口: Box<dyn FnMut((f64, f64)) -> () + 'static>,
+        改变大小: Box<dyn FnMut((f64, f64), (f32, f32)) -> () + 'static>,
     ) -> Self {
         let 指针: Rc<RefCell<Option<指针管理器>>> = Rc::new(RefCell::new(None));
 
@@ -99,6 +101,8 @@ impl 输入管理器 {
         let 指针1 = 指针.clone();
         let 键盘1 = 键盘.clone();
         let 窗口大小1 = 窗口大小.clone();
+        let mut 移动窗口 = Some(移动窗口);
+        let mut 改变大小 = Some(改变大小);
         座.quick_assign(move |座, 事件, _| match 事件 {
             wl_seat::Event::Capabilities { capabilities } => {
                 // 鼠标和键盘只创建一次
@@ -113,6 +117,8 @@ impl 输入管理器 {
                         合成器.clone(),
                         窗口大小1.clone(),
                         32,
+                        移动窗口.take().unwrap(),
+                        改变大小.take().unwrap(),
                     );
                     指针1.replace(Some(指针));
                 }
