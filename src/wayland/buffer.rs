@@ -41,7 +41,12 @@ impl 缓冲区管理器 {
         大小: (u32, u32),
     ) {
         // 尝试改变大小
-        match 缓冲.borrow_mut().变大小(大小) {
+        let 结果 = {
+            let mut 缓冲1 = 缓冲.borrow_mut();
+            缓冲1.变大小(大小)
+        };
+
+        match 结果 {
             Ok(_) => {
                 // 继续使用原来的缓冲区
             }
@@ -208,6 +213,10 @@ impl 共享内存缓冲区 {
     // 当前大小
     pub fn 取大小(&self) -> (u32, u32) {
         self.当前大小
+    }
+
+    pub fn 取最大大小(&self) -> (u32, u32) {
+        self.最大大小
     }
 
     pub fn 销毁(self) {

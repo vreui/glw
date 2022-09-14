@@ -46,15 +46,11 @@ impl 输入管理器 {
                     surface_y,
                     ..
                 } => {
-                    println!("鼠标进入  ({}, {})", surface_x, surface_y);
-
                     let mut 指针2 = 指针1.borrow_mut();
                     let 指针 = 指针2.as_mut().unwrap();
                     指针.鼠标进入(serial, surface_x, surface_y);
                 }
                 wl_pointer::Event::Leave { .. } => {
-                    println!("鼠标离开");
-
                     let mut 指针2 = 指针1.borrow_mut();
                     let 指针 = 指针2.as_mut().unwrap();
                     指针.鼠标离开();
@@ -85,10 +81,10 @@ impl 输入管理器 {
             // 键盘事件
             Events::Keyboard { event, .. } => match event {
                 wl_keyboard::Event::Enter { .. } => {
-                    println!("键盘获得焦点");
+                    // TODO
                 }
                 wl_keyboard::Event::Leave { .. } => {
-                    println!("键盘失去焦点");
+                    // TODO
                 }
                 wl_keyboard::Event::Key { key, state, .. } => {
                     println!("键盘按键  {}  ({:?})", key, state);

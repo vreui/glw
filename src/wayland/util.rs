@@ -3,16 +3,13 @@
 use std::{
     ffi::CString,
     fs::File,
-    io::{BufWriter, Write},
-    os::unix::io::{AsRawFd, FromRawFd},
+    io::{BufWriter, Seek, SeekFrom, Write},
+    os::unix::io::FromRawFd,
 };
 
 use wayland_client::{protocol::wl_surface, Main};
 
-use nix::{
-    sys::memfd::{memfd_create, MemFdCreateFlag},
-    unistd::{lseek, Whence},
-};
+use nix::sys::memfd::{memfd_create, MemFdCreateFlag};
 
 use super::paint::绘制参数;
 use super::t::{窗口边框宽度, 窗口顶部宽度};
@@ -24,45 +21,6 @@ pub fn 创建匿名文件(名称: &str) -> File {
     let 名称 = CString::new(名称).unwrap();
     let fd = memfd_create(&名称, MemFdCreateFlag::empty()).unwrap();
     unsafe { File::from_raw_fd(fd) }
-}
-
-// TODO
-// 纯色填充 (像素绘制)
-//
-// 颜色: RGBA
-//
-// 缓冲区像素格式: ARGB8888
-pub fn 填充缓冲区(文件: &mut File, 大小: (u32, u32), 颜色: (f32, f32, f32, f32)) {
-    // 从头开始写文件
-    lseek(文件.as_raw_fd(), 0, Whence::SeekSet).unwrap();
-
-    // ARGB
-    fn 计算像素(颜色: (f32, f32, f32, f32)) -> [u8; 4] {
-        let 最大 = 0xff as f32;
-        ((((最大 * 颜色.3) as u32) << 24)
-            | (((最大 * 颜色.0) as u32) << 16)
-            | (((最大 * 颜色.1) as u32) << 8)
-            | ((最大 * 颜色.2) as u32))
-            .to_ne_bytes()
-    }
-
-    let 像素 = 计算像素(颜色);
-    // 顶部使用半透明 (0.5 A)
-    let 顶部像素 = 计算像素((颜色.0, 颜色.1, 颜色.2, 颜色.3 * 0.5));
-
-    let mut 写 = BufWriter::new(文件);
-    // 填充像素
-    for y in 0..大小.1 {
-        for _x in 0..大小.0 {
-            if y < (窗口顶部宽度 as u32) {
-                写.write_all(&顶部像素).unwrap();
-            } else {
-                写.write_all(&像素).unwrap();
-            }
-        }
-    }
-
-    写.flush().unwrap();
 }
 
 // 鼠标位于窗口的区域
@@ -157,5 +115,43 @@ pub fn 表面设置更新区域(
 
 // 窗口的默认绘制
 pub fn 窗口默认绘制(参数: 绘制参数, 背景色: (f32, f32, f32, f32)) {
-    // TODO
+    // 检查跳过绘制
+    if 参数.已绘制 && (参数.大小.0 <= 参数.最大大小.0) && (参数.大小.1 <= 参数.最大大小.1)
+    {
+        return;
+    }
+    // DEBUG
+    println!("*** 窗口默认绘制");
+
+    // ARGB
+    fn 计算像素(颜色: (f32, f32, f32, f32)) -> [u8; 4] {
+        let 最大 = 0xff as f32;
+        ((((最大 * 颜色.3) as u32) << 24)
+            | (((最大 * 颜色.0) as u32) << 16)
+            | (((最大 * 颜色.1) as u32) << 8)
+            | ((最大 * 颜色.2) as u32))
+            .to_ne_bytes()
+    }
+
+    let 像素 = 计算像素(背景色);
+    // 顶部使用半透明 (0.5 A)
+    let 顶部像素 = 计算像素((背景色.0, 背景色.1, 背景色.2, 背景色.3 * 0.5));
+
+    let 大小 = 参数.大小;
+    let 行间隔 = 参数.行间隔;
+
+    let mut 写 = BufWriter::new(参数.文件);
+    // 填充像素
+    for y in 0..大小.1 {
+        写.seek(SeekFrom::Start(y as u64 * 行间隔 as u64)).unwrap();
+        for _x in 0..大小.0 {
+            if y < (窗口顶部宽度 as u32) {
+                写.write_all(&顶部像素).unwrap();
+            } else {
+                写.write_all(&像素).unwrap();
+            }
+        }
+    }
+
+    写.flush().unwrap();
 }

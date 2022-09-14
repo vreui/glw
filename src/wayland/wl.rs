@@ -123,13 +123,14 @@ impl Wl封装 {
         self.输入 = Some(输入);
 
         // 设置绘制
-        let mut 绘制 = 窗口绘制管理器::new(
+        let 绘制 = 窗口绘制管理器::new(
             &self.全局,
             self.窗口大小.clone(),
             &顶级,
             绘制类型,
             绘制回调,
         );
+        self.绘制.replace(Some(绘制));
 
         // 提交表面, 同步 wayland 服务器
         {
@@ -142,10 +143,11 @@ impl Wl封装 {
                 .unwrap();
 
             // 初始绘制
+            let mut 绘制1 = self.绘制.borrow_mut();
+            let 绘制 = 绘制1.as_mut().unwrap();
             绘制.初始绘制(初始大小);
         }
 
-        self.绘制.replace(Some(绘制));
         顶级
     }
 
