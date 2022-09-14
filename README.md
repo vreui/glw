@@ -67,6 +67,9 @@ glw (计划) 支持下列平台 (协议):
 + winit
   <https://github.com/rust-windowing/winit>
 
++ wayland-rs
+  <https://github.com/smithay/wayland-rs>
+
 
 ## LICENSE
 

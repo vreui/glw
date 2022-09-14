@@ -1,5 +1,11 @@
 //! glw: glw = glutin + winit
 
+// feature 依赖处理
+
+// gleam 依赖 egl
+#[cfg(all(feature = "gleam", not(feature = "egl")))]
+compile_error!("feature gleam 依赖 egl");
+
 //#![feature(negative_impls)]
 
 #[allow(unused_imports)]
@@ -20,6 +26,9 @@ extern crate libloading;
 // 模块
 mod api;
 mod util;
+
+#[cfg(feature = "egl")]
+mod egl;
 
 #[cfg(target_os = "android")]
 pub mod android;
@@ -42,6 +51,11 @@ use windows::接口 as 内部;
 
 // 导出
 pub use api::{窗口, 窗口创建参数};
+
+#[cfg(feature = "egl")]
+pub use api::{Gl类型, Gl要求};
+#[cfg(feature = "egl")]
+pub use egl::Egl管理器;
 
 // TODO
 

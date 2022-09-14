@@ -5,13 +5,14 @@ use std::{
     fs::File,
     io::{BufWriter, Seek, SeekFrom, Write},
     os::unix::io::FromRawFd,
+    rc::Rc,
 };
 
 use wayland_client::{protocol::wl_surface, Main};
 
 use nix::sys::memfd::{memfd_create, MemFdCreateFlag};
 
-use super::paint::绘制参数;
+use super::paint::{绘制参数, 绘制参数Egl, 绘制参数_共享内存, 绘制参数类型};
 use super::t::{窗口边框宽度, 窗口顶部宽度};
 
 // 只存在于内存中的文件
@@ -115,8 +116,32 @@ pub fn 表面设置更新区域(
 
 // 窗口的默认绘制
 pub fn 窗口默认绘制(参数: 绘制参数, 背景色: (f32, f32, f32, f32)) {
+    match 参数.类型 {
+        #[cfg(feature = "egl")]
+        绘制参数类型::EGL(a) => {
+            #[cfg(feature = "gleam")]
+            窗口默认绘制_egl(参数.大小, 背景色, a);
+        }
+        绘制参数类型::共享内存(a) => {
+            窗口默认绘制_共享内存(参数.大小, 背景色, a);
+        }
+    }
+}
+
+#[cfg(feature = "gleam")]
+fn 窗口默认绘制_egl(
+    _大小: (u32, u32), _背景色: (f32, f32, f32, f32), _参数: 绘制参数Egl
+) {
+    // TODO
+}
+
+fn 窗口默认绘制_共享内存(
+    大小: (u32, u32),
+    背景色: (f32, f32, f32, f32),
+    参数: 绘制参数_共享内存,
+) {
     // 检查跳过绘制
-    if 参数.已绘制 && (参数.大小.0 <= 参数.最大大小.0) && (参数.大小.1 <= 参数.最大大小.1)
+    if 参数.已绘制 && (大小.0 <= 参数.最大大小.0) && (大小.1 <= 参数.最大大小.1)
     {
         return;
     }
@@ -137,7 +162,6 @@ pub fn 窗口默认绘制(参数: 绘制参数, 背景色: (f32, f32, f32, f32))
     // 顶部使用半透明 (0.5 A)
     let 顶部像素 = 计算像素((背景色.0, 背景色.1, 背景色.2, 背景色.3 * 0.5));
 
-    let 大小 = 参数.大小;
     let 行间隔 = 参数.行间隔;
 
     let mut 写 = BufWriter::new(参数.文件);

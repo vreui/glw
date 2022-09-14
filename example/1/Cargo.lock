@@ -113,6 +113,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "gleam"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "992c40589d382354958af7c60910026ed4cc3c58751355db21a4c2fbef15727a"
+dependencies = [
+ "gl_generator",
+]
+
+[[package]]
 name = "glutin_egl_sys"
 version = "0.2.0"
 source = "git+https://github.com/rust-windowing/glutin#24812ca627283b1d9189cd46d8a450eea108e68d"
@@ -135,6 +144,7 @@ version = "0.1.0"
 dependencies = [
  "bitflags",
  "cfg_aliases",
+ "gleam",
  "glutin_egl_sys",
  "glutin_wgl_sys",
  "instant",

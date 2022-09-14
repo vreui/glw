@@ -4,6 +4,46 @@ use std::rc::Rc;
 
 use super::内部::内部窗口;
 
+/// 要求创建 OpenGL / OpenGL ES 的类型
+#[cfg(feature = "egl")]
+#[derive(Debug, Clone, Copy)]
+pub enum Gl要求 {
+    /// 创建 OpenGL
+    Gl {
+        /// 版本号: (主, 次)
+        gl版本: (u32, u32),
+    },
+    /// 创建 OpenGL ES
+    Gles {
+        /// 版本号: (主, 次)
+        gles版本: (u32, u32),
+    },
+    /// 优先创建 OpenGL
+    GlGles {
+        /// 版本号: (主, 次)
+        gl版本: (u32, u32),
+        /// 版本号: (主, 次)
+        gles版本: (u32, u32),
+    },
+    /// 优先创建 OpenGL ES
+    GlesGl {
+        /// 版本号: (主, 次)
+        gl版本: (u32, u32),
+        /// 版本号: (主, 次)
+        gles版本: (u32, u32),
+    },
+}
+
+/// 创建的 API 类型
+#[cfg(feature = "egl")]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Gl类型 {
+    /// OpenGL
+    Gl,
+    /// OpenGl ES
+    Gles,
+}
+
 /// 基础的窗口创建参数
 #[derive(Debug, Clone, Copy)]
 pub struct 窗口创建参数<'a> {
@@ -141,5 +181,3 @@ pub trait 内部窗口接口 {
     /// 用于销毁窗口
     fn 清理(self);
 }
-
-// TODO

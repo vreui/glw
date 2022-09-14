@@ -1,5 +1,15 @@
 //! 全局常量和类型定义
 
+#[cfg(feature = "egl")]
+use crate::api::Gl要求;
+
+// 创建使用的 GL 版本
+#[cfg(feature = "egl")]
+pub const GL版本: Gl要求 = Gl要求::GlGles {
+    gl版本: (3, 2),
+    gles版本: (3, 0),
+};
+
 // 默认值
 pub const 窗口边框宽度: i32 = 8; // 8 像素
 pub const 窗口顶部宽度: i32 = 8;
@@ -30,10 +40,11 @@ pub enum 指针类型<'a> {
 }
 
 // 缓冲区 (绘制) 类型
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum 缓冲区类型 {
     // 使用共享内存 (wl_shm) 软件绘制
     共享内存,
     // OpenGL / OpenGL ES 绘制
+    #[cfg(feature = "egl")]
     EGL,
 }

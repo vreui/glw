@@ -1,4 +1,4 @@
-//! 缓冲区管理器
+//! 缓冲区管理器 (共享内存)
 
 use std::{cell::RefCell, fs::File, os::unix::io::AsRawFd, rc::Rc};
 
@@ -7,7 +7,6 @@ use wayland_client::{
     Main,
 };
 
-use super::t::缓冲区类型;
 use super::util::创建匿名文件;
 
 #[derive(Debug)]
@@ -19,7 +18,6 @@ struct 共享内存双缓冲 {
     pub 标志: Rc<RefCell<bool>>,
 }
 
-// TODO 支持 EGL
 #[derive(Debug)]
 pub struct 缓冲区管理器 {
     共享内存: Main<wl_shm::WlShm>,

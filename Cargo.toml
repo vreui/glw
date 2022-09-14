@@ -31,6 +31,9 @@ mint = "^0.5.9"
 raw-window-handle = "^0.5.0"
 libloading = { version = "^0.7.3", optional = true }
 
+# gleam 版本必须与 webrender 的依赖保持一致
+gleam = { version = "0.13.1", optional = true }
+
 [dependencies.instant]
 version = "^0.1.12"
 #features = ["wasm-bindgen"]
@@ -53,16 +56,11 @@ ndk = "^0.7.0"
 ndk-glue = "^0.7.0"
 
 # glutin_egl_sys
-[target.'cfg(target_os = "linux")'.dependencies.glutin_egl_sys]
+[target.'cfg(any(target_os = "linux", target_os = "android"))'.dependencies.glutin_egl_sys]
 version = "0.2.0"
 git = "https://github.com/rust-windowing/glutin"
 #path = "../glutin/glutin_egl_sys"
 optional = true
-
-[target.'cfg(target_os = "android")'.dependencies.glutin_egl_sys]
-version = "0.2.0"
-git = "https://github.com/rust-windowing/glutin"
-#path = "../glutin/glutin_egl_sys"
 
 [target.'cfg(target_os = "windows")'.dependencies.glutin_egl_sys]
 version = "0.2.0"
@@ -140,6 +138,7 @@ features = [
 cfg_aliases = "^0.1.1"
 
 [features]
-default = ["egl", "wgl"]
+# gleam 依赖 egl
+default = ["egl", "wgl", "gleam"]
 egl = ["glutin_egl_sys", "libloading"]
 wgl = ["glutin_wgl_sys"]
