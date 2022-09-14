@@ -24,6 +24,9 @@ use crate::egl::Egl管理器;
 #[cfg(feature = "gleam")]
 use crate::egl::初始化gleam;
 
+#[cfg(feature = "egl")]
+use super::egl::Egl实现;
+
 // 绘制窗口用的参数
 pub struct 绘制参数<'a> {
     // 当前分辨率
@@ -62,6 +65,7 @@ pub struct 绘制参数_共享内存<'a> {
 
 //#[derive(Debug)]
 pub struct 窗口绘制管理器 {
+    全局: Wl全局管理器,
     窗口大小: Rc<RefCell<(f32, f32)>>,
     缓冲: 缓冲区管理器,
 
@@ -96,6 +100,7 @@ impl 窗口绘制管理器 {
         let 缓冲 = 缓冲区管理器::new(全局.取共享内存().clone());
 
         Self {
+            全局: 全局.clone(),
             窗口大小,
             缓冲,
 
@@ -110,6 +115,32 @@ impl 窗口绘制管理器 {
             #[cfg(feature = "gleam")]
             gl: None,
         }
+    }
+
+    #[cfg(feature = "egl")]
+    pub fn 初始化gl(&mut self, 大小: (u32, u32)) {
+        // 初始化 EGL
+        let 表面 = self.顶级.取表面();
+        let egl表面 = WlEglSurface::new(表面, 大小.0 as i32, 大小.1 as i32);
+
+        let 显示指针 = self.全局.取显示指针();
+        let egl表面指针 = egl表面.ptr();
+        let egl实现 = unsafe { Egl实现::new(GL版本, 显示指针, egl表面指针) };
+        let egl = Egl管理器::new(egl实现).unwrap();
+
+        #[cfg(feature = "gleam")]
+        {
+            // 初始化 gleam
+            let gl = 初始化gleam(&egl);
+            self.gl = Some(gl);
+        }
+        self.egl表面 = Some(egl表面);
+        self.egl = Some(egl);
+    }
+
+    #[cfg(feature = "gleam")]
+    pub fn 取gl(&self) -> &Option<Rc<dyn gl::Gl>> {
+        &self.gl
     }
 
     pub fn 初始绘制(&mut self, 初始大小: (f32, f32)) {
@@ -128,33 +159,21 @@ impl 窗口绘制管理器 {
 
     #[cfg(feature = "egl")]
     fn 初始绘制_egl(&mut self, 大小: (u32, u32)) {
-        // 初始化 EGL
-        let 表面 = self.顶级.取表面();
-        let egl表面 = WlEglSurface::new(表面, 大小.0 as i32, 大小.1 as i32);
-
-        let egl表面指针 = egl表面.ptr();
-        let egl = unsafe { Egl管理器::new(GL版本, egl表面指针) };
-
+        // 绘制
         #[cfg(feature = "gleam")]
         {
-            // 初始化 gleam
-            let gl = 初始化gleam(&egl);
-            // 绘制
+            let 表面 = self.顶级.取表面();
+
             (self.绘制回调)(绘制参数 {
                 大小,
                 类型: 绘制参数类型::EGL(绘制参数Egl {
                     初始绘制: true,
-                    gl: &gl,
+                    gl: self.gl.as_ref().unwrap(),
                 }),
             });
 
             表面.commit();
-
-            self.gl = Some(gl);
         }
-
-        self.egl表面 = Some(egl表面);
-        self.egl = Some(egl);
     }
 
     fn 初始绘制_共享内存(&mut self, 大小: (u32, u32)) {

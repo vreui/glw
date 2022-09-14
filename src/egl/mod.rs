@@ -1,48 +1,56 @@
 //! EGL 管理器
 
+extern crate glutin_egl_sys;
+
 #[cfg(feature = "gleam")]
 extern crate gleam;
 
-use core::ffi::c_void;
+pub mod loadlib;
 
-use std::rc::Rc;
+use std::{ffi, rc::Rc};
 
 #[cfg(feature = "gleam")]
 use gleam::gl;
 
-use crate::api::{Gl类型, Gl要求};
+use crate::api::Gl类型;
+use crate::内部::Egl实现;
+
+use loadlib::{Egl库, EGL};
 
 pub struct Egl管理器 {
-    // 创建的接口类型
-    类型: Gl类型,
-    // TODO
+    egl: &'static Egl库,
+
+    // 特定平台的 EGL 实现
+    平台: Egl实现,
 }
 
 impl Egl管理器 {
     /// 创建并初始化 EGL
-    pub unsafe fn new(_要求: Gl要求, _指针: *const c_void) -> Self {
-        // TODO
-        Self {
-            // TODO
-            类型: Gl类型::Gl,
-        }
+    pub fn new(平台: Egl实现) -> Result<Self, ()> {
+        // 加载 EGL 库
+        let egl = match EGL.as_ref() {
+            Some(egl) => egl,
+            None => return Err(()),
+        };
+
+        Ok(Self { egl, 平台 })
     }
 
     /// 创建的 API 类型
     pub fn 接口类型(&self) -> Gl类型 {
-        self.类型
+        self.平台.接口类型()
     }
 
     /// 返回一个 GL 函数的地址
-    pub fn 取函数地址(&self, _名称: &str) -> *const c_void {
-        // TODO
-        0 as *const c_void
+    pub fn 取函数地址(&self, 名称: &str) -> *const ffi::c_void {
+        let 名称 = ffi::CString::new(名称).unwrap();
+
+        unsafe { self.egl.GetProcAddress(名称.as_ptr()) as *const _ }
     }
 
     /// egl: make_current()
     pub unsafe fn 设为当前(&mut self) -> Result<(), String> {
-        // TODO
-        Ok(())
+        self.平台.设为当前()
     }
 }
 

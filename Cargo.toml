@@ -134,9 +134,6 @@ features = [
   "WheelEvent",
 ]
 
-[build-dependencies]
-cfg_aliases = "^0.1.1"
-
 [features]
 # gleam 依赖 egl
 default = ["egl", "wgl", "gleam"]

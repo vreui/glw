@@ -40,7 +40,7 @@ pub enum 指针类型<'a> {
 }
 
 // 缓冲区 (绘制) 类型
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum 缓冲区类型 {
     // 使用共享内存 (wl_shm) 软件绘制
     共享内存,

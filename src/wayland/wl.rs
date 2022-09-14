@@ -123,13 +123,17 @@ impl Wl封装 {
         self.输入 = Some(输入);
 
         // 设置绘制
-        let 绘制 = 窗口绘制管理器::new(
+        let mut 绘制 = 窗口绘制管理器::new(
             &self.全局,
             self.窗口大小.clone(),
             &顶级,
             绘制类型,
             绘制回调,
         );
+        #[cfg(feature = "egl")]
+        if 绘制类型 == 缓冲区类型::EGL {
+            绘制.初始化gl((初始大小.0 as u32, 初始大小.1 as u32));
+        }
         self.绘制.replace(Some(绘制));
 
         // 提交表面, 同步 wayland 服务器

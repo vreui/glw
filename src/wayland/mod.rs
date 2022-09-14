@@ -9,9 +9,6 @@ extern crate wayland_protocols;
 #[cfg(feature = "egl")]
 extern crate wayland_egl;
 
-#[cfg(feature = "egl")]
-extern crate glutin_egl_sys;
-
 mod buffer;
 mod cursor;
 mod input;
@@ -22,8 +19,14 @@ mod wl;
 mod wlg;
 mod xdgtl;
 
+#[cfg(feature = "egl")]
+mod egl;
+
 pub(crate) mod 接口 {
     use std::{cell::RefCell, rc::Rc};
+
+    // 导出
+    pub use super::egl::Egl实现;
 
     use super::paint::绘制参数;
     use super::t::缓冲区类型;
