@@ -4,12 +4,13 @@ use std::{cell::RefCell, rc::Rc};
 
 use wayland_client::{
     event_enum,
-    protocol::{wl_compositor, wl_keyboard, wl_pointer, wl_seat, wl_shm},
-    Filter, GlobalManager, Main,
+    protocol::{wl_keyboard, wl_pointer, wl_seat},
+    Filter, Main,
 };
 use wayland_protocols::xdg_shell::client::xdg_toplevel;
 
 use super::cursor::指针管理器;
+use super::wlg::Wl全局管理器;
 
 event_enum!(
   Events |
@@ -19,26 +20,19 @@ event_enum!(
 
 #[derive(Debug)]
 pub struct 输入管理器 {
-    座: Main<wl_seat::WlSeat>,
-
-    键盘: Rc<RefCell<Option<Main<wl_keyboard::WlKeyboard>>>>,
-
     // 鼠标
     指针: Rc<RefCell<Option<指针管理器>>>,
+
+    键盘: Rc<RefCell<Option<Main<wl_keyboard::WlKeyboard>>>>,
 }
 
 impl 输入管理器 {
     pub fn new(
-        全局管理: &GlobalManager,
-        共享内存: Main<wl_shm::WlShm>,
-        合成器: Main<wl_compositor::WlCompositor>,
+        全局: &Wl全局管理器,
         窗口大小: Rc<RefCell<(f32, f32)>>,
-        xdg顶级: Main<xdg_toplevel::XdgToplevel>,
+        顶级: Main<xdg_toplevel::XdgToplevel>,
     ) -> Self {
         let 指针: Rc<RefCell<Option<指针管理器>>> = Rc::new(RefCell::new(None));
-
-        // wl_seat
-        let 座 = 全局管理.instantiate_exact::<wl_seat::WlSeat>(1).unwrap();
         let 键盘: Rc<RefCell<Option<Main<wl_keyboard::WlKeyboard>>>> = Rc::new(RefCell::new(None));
 
         // 事件处理
@@ -106,8 +100,10 @@ impl 输入管理器 {
         // TODO 处理 鼠标/键盘 动态添加移除
         let 指针1 = 指针.clone();
         let 键盘1 = 键盘.clone();
-        let 座1 = 座.clone();
         let 窗口大小1 = 窗口大小.clone();
+        let 全局1 = 全局.clone();
+
+        let 座 = 全局.取座();
         座.quick_assign(move |座, 事件, _| match 事件 {
             wl_seat::Event::Capabilities { capabilities } => {
                 // 鼠标和键盘只创建一次
@@ -116,15 +112,8 @@ impl 输入管理器 {
                     let 鼠标 = 座.get_pointer();
                     鼠标.assign(过滤器.clone());
 
-                    let 指针 = 指针管理器::new(
-                        鼠标,
-                        共享内存.clone(),
-                        合成器.clone(),
-                        座1.clone(),
-                        xdg顶级.clone(),
-                        窗口大小1.clone(),
-                        32,
-                    );
+                    let 指针 =
+                        指针管理器::new(&全局1, 鼠标, 顶级.clone(), 窗口大小1.clone(), 32);
                     指针1.replace(Some(指针));
                 }
                 if 键盘1.borrow().is_none() && capabilities.contains(wl_seat::Capability::Keyboard)
@@ -137,8 +126,6 @@ impl 输入管理器 {
             _ => {}
         });
 
-        Self {
-            座, 键盘, 指针
-        }
+        Self { 指针, 键盘 }
     }
 }

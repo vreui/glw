@@ -3,36 +3,15 @@
 use std::{cell::RefCell, rc::Rc};
 
 use wayland_client::{
-    protocol::{wl_compositor, wl_pointer, wl_seat, wl_shm, wl_surface},
+    protocol::{wl_pointer, wl_seat, wl_surface},
     Main,
 };
 use wayland_cursor::{Cursor, CursorTheme};
 use wayland_protocols::xdg_shell::client::xdg_toplevel;
 
-use super::util::窗口区域;
-
-// 鼠标按键
-// wl_pointer::Event::Button.button
-pub const 鼠标左键: u32 = 0x110; // 272
-pub const 鼠标右键: u32 = 0x111; // 273
-pub const 鼠标中键: u32 = 0x112; // 274
-
-#[derive(Debug, Clone, Copy)]
-pub enum 指针类型<'a> {
-    默认,
-    文本,
-    链接,
-
-    // 用于窗口边框
-    移动,
-    箭头左右,
-    箭头上下,
-    箭头左上右下,
-    箭头左下右上,
-
-    // 自定义名称
-    名称(&'a str),
-}
+use super::t::{指针类型, 鼠标右键, 鼠标左键};
+use super::util::{窗口区域, 表面设置更新区域};
+use super::wlg::Wl全局管理器;
 
 fn 取指针<'a>(鼠标主题: &'a mut CursorTheme, 类型: 指针类型) -> &'a Cursor {
     // GNOME Adwaita
@@ -70,22 +49,20 @@ pub struct 指针管理器 {
 
     // 用于 移动窗口/改变窗口大小
     座: Main<wl_seat::WlSeat>,
-    xdg顶级: Main<xdg_toplevel::XdgToplevel>,
+    顶级: Main<xdg_toplevel::XdgToplevel>,
     // 鼠标最后所在的坐标
     坐标: (f64, f64),
 }
 
 impl 指针管理器 {
     pub fn new(
+        全局: &Wl全局管理器,
         鼠标: Main<wl_pointer::WlPointer>,
-        共享内存: Main<wl_shm::WlShm>,
-        合成器: Main<wl_compositor::WlCompositor>,
-        座: Main<wl_seat::WlSeat>,
-        xdg顶级: Main<xdg_toplevel::XdgToplevel>,
+        顶级: Main<xdg_toplevel::XdgToplevel>,
         窗口大小: Rc<RefCell<(f32, f32)>>,
         指针大小: u32,
     ) -> Self {
-        let mut 鼠标主题 = CursorTheme::load(指针大小, &共享内存);
+        let mut 鼠标主题 = CursorTheme::load(指针大小, 全局.取共享内存());
         // 预加载指针图标
         let _ = 取指针(&mut 鼠标主题, 指针类型::默认);
         let _ = 取指针(&mut 鼠标主题, 指针类型::文本);
@@ -96,7 +73,7 @@ impl 指针管理器 {
         let _ = 取指针(&mut 鼠标主题, 指针类型::箭头左上右下);
         let _ = 取指针(&mut 鼠标主题, 指针类型::箭头左下右上);
 
-        let 鼠标表面 = 合成器.create_surface();
+        let 鼠标表面 = 全局.取合成器().create_surface();
 
         Self {
             窗口大小,
@@ -108,8 +85,8 @@ impl 指针管理器 {
             鼠标表面,
 
             序号: 0,
-            座,
-            xdg顶级,
+            座: 全局.取座().clone(),
+            顶级,
             坐标: (0.0, 0.0),
         }
     }
@@ -136,12 +113,7 @@ impl 指针管理器 {
         // TODO 支持界面缩放 (设备像素缩放比例)
         self.鼠标表面.attach(Some(指针图片), 0, 0);
 
-        if self.鼠标表面.as_ref().version() >= 4 {
-            self.鼠标表面
-                .damage_buffer(0, 0, 大小.0 as i32, 大小.1 as i32);
-        } else {
-            self.鼠标表面.damage(0, 0, 大小.0 as i32, 大小.1 as i32);
-        }
+        表面设置更新区域(&self.鼠标表面, (0, 0, 大小.0 as i32, 大小.1 as i32));
         self.鼠标表面.commit();
 
         // 注意: 必须先 attach() 再 set_cursor(), 否则 GNOME (mutter) 不会显示鼠标指针
@@ -214,7 +186,7 @@ impl 指针管理器 {
                         窗口区域::内容 => {}
                         窗口区域::上边框 => {
                             // 移动
-                            self.xdg顶级._move(&self.座, 序号);
+                            self.顶级._move(&self.座, 序号);
                         }
                         _ => {
                             // 改变大小
@@ -228,7 +200,7 @@ impl 指针管理器 {
                                 窗口区域::右下角 => xdg_toplevel::ResizeEdge::BottomRight,
                                 _ => xdg_toplevel::ResizeEdge::None,
                             };
-                            self.xdg顶级.resize(&self.座, 序号, 情况);
+                            self.顶级.resize(&self.座, 序号, 情况);
                         }
                     },
                     _ => {}
@@ -243,7 +215,7 @@ impl 指针管理器 {
                     Some(类型) => match 类型 {
                         窗口区域::上边框 => {
                             // 窗口菜单
-                            self.xdg顶级.show_window_menu(
+                            self.顶级.show_window_menu(
                                 &self.座,
                                 序号,
                                 self.坐标.0 as i32,

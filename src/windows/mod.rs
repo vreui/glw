@@ -8,6 +8,9 @@ extern crate glutin_egl_sys;
 #[cfg(feature = "wgl")]
 extern crate glutin_wgl_sys;
 
+// TODO
+mod window;
+
 pub(crate) mod 接口 {
     // TODO
 }

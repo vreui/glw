@@ -7,15 +7,15 @@ use std::{
     os::unix::io::{AsRawFd, FromRawFd},
 };
 
+use wayland_client::{protocol::wl_surface, Main};
+
 use nix::{
     sys::memfd::{memfd_create, MemFdCreateFlag},
     unistd::{lseek, Whence},
 };
 
-// 默认值
-pub const 窗口边框宽度: i32 = 8; // 8 像素
-pub const 窗口顶部宽度: i32 = 8;
-pub const 最小窗口大小: (i32, i32) = (16, 16);
+use super::paint::绘制参数;
+use super::t::{窗口边框宽度, 窗口顶部宽度};
 
 // 只存在于内存中的文件
 //
@@ -26,6 +26,7 @@ pub fn 创建匿名文件(名称: &str) -> File {
     unsafe { File::from_raw_fd(fd) }
 }
 
+// TODO
 // 纯色填充 (像素绘制)
 //
 // 颜色: RGBA
@@ -141,4 +142,20 @@ impl 窗口区域 {
         // 默认为 右下角 (用于窗口太小)
         Self::右下角
     }
+}
+
+// wl_surface 设置更新区域
+pub fn 表面设置更新区域(
+    表面: &Main<wl_surface::WlSurface>, 区域: (i32, i32, i32, i32)
+) {
+    if 表面.as_ref().version() >= 4 {
+        表面.damage_buffer(区域.0, 区域.1, 区域.2, 区域.3);
+    } else {
+        表面.damage(区域.0, 区域.1, 区域.2, 区域.3);
+    }
+}
+
+// 窗口的默认绘制
+pub fn 窗口默认绘制(参数: 绘制参数, 背景色: (f32, f32, f32, f32)) {
+    // TODO
 }

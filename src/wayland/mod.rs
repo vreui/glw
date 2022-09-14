@@ -15,19 +15,19 @@ extern crate glutin_egl_sys;
 mod buffer;
 mod cursor;
 mod input;
+mod paint;
+mod t;
 mod util;
 mod wl;
+mod wlg;
+mod xdgtl;
 
 pub(crate) mod 接口 {
-    use std::{cell::RefCell, fs::File, rc::Rc};
+    use std::{cell::RefCell, rc::Rc};
 
-    use wayland_client::{
-        protocol::{wl_buffer, wl_surface},
-        Main,
-    };
-    use wayland_protocols::xdg_shell::client::xdg_toplevel;
-
-    use super::buffer::缓冲区管理器;
+    use super::paint::绘制参数;
+    use super::t::缓冲区类型;
+    use super::util::窗口默认绘制;
     use super::wl::Wl封装;
     use crate::api::{内部窗口接口, 窗口创建参数};
 
@@ -36,73 +36,45 @@ pub(crate) mod 接口 {
         #[allow(dead_code)]
         非线程安全: Rc<()>,
 
+        运行标志: Rc<RefCell<bool>>,
+
         标题: String,
         背景色: Rc<RefCell<(f32, f32, f32, f32)>>,
 
         wl: Wl封装,
-        运行标志: Rc<RefCell<bool>>,
-
-        缓冲区: Rc<RefCell<Option<Main<wl_buffer::WlBuffer>>>>,
-        // 共享内存缓冲区
-        缓冲区文件: Rc<RefCell<Option<File>>>,
-
-        表面: Main<wl_surface::WlSurface>,
-        xdg顶级: Main<xdg_toplevel::XdgToplevel>,
     }
 
     impl 内部窗口 {
         pub fn new(参数: 窗口创建参数) -> Self {
+            let 运行标志 = Rc::new(RefCell::new(false));
             let mut wl = Wl封装::new();
 
             let 背景色 = Rc::new(RefCell::new(参数.背景色));
-            let 缓冲区: Rc<RefCell<Option<Main<wl_buffer::WlBuffer>>>> =
-                Rc::new(RefCell::new(None));
-            let 缓冲区文件: Rc<RefCell<Option<File>>> = Rc::new(RefCell::new(None));
 
-            // TODO 支持 EGL 缓冲区
+            // 窗口绘制回调
             let 背景色1 = 背景色.clone();
-            let 缓冲区1 = 缓冲区.clone();
-            let 缓冲区文件1 = 缓冲区文件.clone();
-            let 创建缓冲区 =
-                move |缓冲: &mut 缓冲区管理器, 大小: (f32, f32)| -> Main<wl_buffer::WlBuffer> {
-                    let (缓冲区, 缓冲区文件) = 缓冲.创建共享内存缓冲区(
-                        (大小.0 as u32, 大小.1 as u32),
-                        背景色1.borrow().clone(),
-                    );
+            let 绘制回调 = Box::new(move |参数: 绘制参数| {
+                窗口默认绘制(参数, 背景色1.borrow().clone());
+            });
+            // TODO 支持 EGL
 
-                    match 缓冲区1.replace(Some(缓冲区.clone())) {
-                        Some(缓冲区) => {
-                            缓冲区.destroy();
-                        }
-                        _ => {}
-                    }
-                    缓冲区文件1.replace(Some(缓冲区文件));
-
-                    缓冲区
-                };
-
-            let 运行标志 = Rc::new(RefCell::new(false));
             // 创建窗口
-            let (表面, xdg顶级) = wl.创建窗口(
+            wl.创建窗口(
                 运行标志.clone(),
-                参数.标题.to_string(),
-                Box::new(创建缓冲区),
                 (参数.大小.0 as f32, 参数.大小.1 as f32),
+                参数.标题.to_string(),
+                缓冲区类型::共享内存,
+                绘制回调,
             );
 
             Self {
                 非线程安全: Rc::new(()),
+                运行标志,
 
                 标题: 参数.标题.to_string(),
                 背景色,
 
                 wl,
-                运行标志,
-
-                缓冲区,
-                缓冲区文件,
-                表面,
-                xdg顶级,
             }
         }
     }
