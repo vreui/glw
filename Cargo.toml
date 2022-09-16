@@ -47,8 +47,6 @@ wayland-cursor = "^0.29.5"
 nix = { version = "^0.25.0", features = ["fs"] }
 #mio = { version = "^0.8.4", features = ["os-ext"] }
 libc = "^0.2.132"
-# TODO
-#wayland-sys = { version = "^0.29.5", default-features = false, features = ["egl", "client", "dlopen"] }
 
 # android
 [target.'cfg(target_os = "android")'.dependencies]
@@ -74,7 +72,7 @@ version = "^0.39.0"
 features = [
   "Win32_Foundation",
   "Win32_Graphics_Gdi",
-  "Win32_Graphics_OpenGL",
+  #"Win32_Graphics_OpenGL",
   "Win32_System_LibraryLoader",
   "Win32_UI_WindowsAndMessaging",
 
@@ -99,11 +97,6 @@ features = [
   "Win32_UI_Shell",
   "Win32_UI_TextServices",
 ]
-
-[target.'cfg(target_os = "windows")'.dependencies.glutin_wgl_sys]
-version = "0.2.0"
-git = "https://github.com/rust-windowing/glutin"
-optional = true
 
 # web (wasm)
 #[target.'cfg(target_arch = "wasm32")'.dependencies.wasm-bindgen]
@@ -136,6 +129,5 @@ features = [
 
 [features]
 # gleam 依赖 egl
-default = ["egl", "wgl", "gleam"]
+default = ["egl", "gleam"]
 egl = ["glutin_egl_sys", "libloading"]
-wgl = ["glutin_wgl_sys"]

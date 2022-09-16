@@ -44,17 +44,19 @@ glw (计划) 支持下列平台 (协议):
 
 + `wayland` (GNU/Linux)
 
-  为了本库的轻量, 在 GNU/Linux 平台不会依赖 gtk/qt 等库.
+  为了本库的轻量, 在此平台不会依赖 gtk/qt 等库.
 
 + `android` 9+
 
 + `windows` 7+
 
-  由于 Windows 不是开源平台, 本库仅对其进行基本支持, 且优先级较低.
+  由于此平台不是开源平台, 本库仅对其进行基本支持, 且优先级较低.
+
+  在此平台使用 ANGLE 作为 OpenGL ES / EGL 兼容层.
 
 + `web` (wasm)
 
-  web 平台目前不能使用 WebRender (vreui), 因此优先级较低.
+  此平台目前不能使用 WebRender (vreui), 因此优先级较低.
 
 苹果平台太过封闭, 且不适用于穷人, 因此不考虑支持.
 
@@ -69,6 +71,9 @@ glw (计划) 支持下列平台 (协议):
 
 + wayland-rs
   <https://github.com/smithay/wayland-rs>
+
++ ANGLE - Almost Native Graphics Layer Engine
+  <https://github.com/google/angle>
 
 
 ## LICENSE
