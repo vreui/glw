@@ -51,6 +51,11 @@ impl Egl管理器 {
     pub unsafe fn 设为当前(&mut self) -> Result<(), String> {
         self.平台.设为当前()
     }
+
+    /// egl: swap_buffers()
+    pub fn 交换缓冲区(&mut self) -> Result<(), String> {
+        self.平台.交换缓冲区()
+    }
 }
 
 #[cfg(feature = "gleam")]

@@ -46,10 +46,10 @@ pub enum 绘制参数类型<'a> {
 #[cfg(feature = "egl")]
 pub struct 绘制参数Egl<'a> {
     // 是否初始绘制标志
-    初始绘制: bool,
+    pub 初始绘制: bool,
 
     #[cfg(feature = "gleam")]
-    gl: &'a Rc<dyn gl::Gl>,
+    pub gl: &'a Rc<dyn gl::Gl>,
 }
 
 // 缓冲区类型::共享内存 专用的绘制参数
@@ -174,6 +174,7 @@ impl 窗口绘制管理器 {
                     gl: self.gl.as_ref().unwrap(),
                 }),
             });
+            self.egl.as_mut().unwrap().交换缓冲区().unwrap();
 
             表面.commit();
         }
@@ -246,6 +247,7 @@ impl 窗口绘制管理器 {
                     gl,
                 }),
             });
+            self.egl.as_mut().unwrap().交换缓冲区().unwrap();
 
             表面设置更新区域(表面, (0, 0, 大小.0 as i32, 大小.1 as i32));
         }

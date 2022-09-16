@@ -12,6 +12,9 @@ use wayland_client::{protocol::wl_surface, Main};
 
 use nix::sys::memfd::{memfd_create, MemFdCreateFlag};
 
+#[cfg(feature = "gleam")]
+use gleam::gl;
+
 use super::paint::{绘制参数, 绘制参数Egl, 绘制参数_共享内存, 绘制参数类型};
 use super::t::{窗口边框宽度, 窗口顶部宽度};
 
@@ -130,9 +133,13 @@ pub fn 窗口默认绘制(参数: 绘制参数, 背景色: (f32, f32, f32, f32))
 
 #[cfg(feature = "gleam")]
 fn 窗口默认绘制_egl(
-    _大小: (u32, u32), _背景色: (f32, f32, f32, f32), _参数: 绘制参数Egl
+    _大小: (u32, u32), 背景色: (f32, f32, f32, f32), 参数: 绘制参数Egl
 ) {
-    // TODO
+    let gl = gl::ErrorCheckingGl::wrap(参数.gl.clone());
+
+    // 清除背景
+    gl.clear_color(背景色.0, 背景色.1, 背景色.2, 背景色.3);
+    gl.clear(gl::COLOR_BUFFER_BIT);
 }
 
 fn 窗口默认绘制_共享内存(

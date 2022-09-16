@@ -74,6 +74,17 @@ impl Egl实现 {
 
         Ok(())
     }
+
+    pub fn 交换缓冲区(&mut self) -> Result<(), String> {
+        unsafe {
+            if self.库.SwapBuffers(self.显示, self.表面) == egl::FALSE {
+                let 错误码 = self.库.GetError();
+                return Err(format!("无法 egl.SwapBuffers()  [{}]", 错误码));
+            }
+        }
+
+        Ok(())
+    }
 }
 
 // EGL 配置模板
@@ -224,6 +235,7 @@ unsafe fn 创建语境(
     // OpenGL (core profile)
     属性.push(egl::CONTEXT_OPENGL_PROFILE_MASK as EGLint);
     属性.push(egl::CONTEXT_OPENGL_CORE_PROFILE_BIT as EGLint);
+    // 注意: OpenGL 3.2 以上版本才支持 core profile
 
     // TODO 支持请求 GL 版本
     // 版本号
@@ -293,7 +305,7 @@ unsafe fn 创建窗口表面(
     // TODO  CreatePlatformWindowSurfaceEXT()  CreateWindowSurface()
 
     if 表面 == egl::NO_SURFACE {
-        return Err("无法创建 WindowSurface (NO_SURFACE".to_string());
+        return Err("无法创建 WindowSurface (NO_SURFACE)".to_string());
     }
 
     Ok(表面)
