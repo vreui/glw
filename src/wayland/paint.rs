@@ -125,8 +125,11 @@ impl 窗口绘制管理器 {
 
         let 显示指针 = self.全局.取显示指针();
         let egl表面指针 = egl表面.ptr();
-        let egl实现 = unsafe { Egl实现::new(GL版本, 显示指针, egl表面指针) };
-        let egl = Egl管理器::new(egl实现).unwrap();
+        let egl实现 = unsafe { Egl实现::new(GL版本, 显示指针, egl表面指针).unwrap() };
+        let mut egl = Egl管理器::new(egl实现).unwrap();
+
+        // 设为当前
+        unsafe { egl.设为当前().unwrap() }
 
         #[cfg(feature = "gleam")]
         {

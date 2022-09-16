@@ -8,6 +8,9 @@ use wayland_client::{
 };
 use wayland_protocols::xdg_shell::client::xdg_wm_base;
 
+#[cfg(feature = "gleam")]
+use gleam::gl;
+
 use super::input::输入管理器;
 use super::paint::{窗口绘制管理器, 绘制参数};
 use super::t::缓冲区类型;
@@ -133,6 +136,13 @@ impl Wl封装 {
         #[cfg(feature = "egl")]
         if 绘制类型 == 缓冲区类型::EGL {
             绘制.初始化gl((初始大小.0 as u32, 初始大小.1 as u32));
+
+            // DEBUG
+            #[cfg(feature = "gleam")]
+            {
+                let gl = 绘制.取gl().as_ref().unwrap();
+                println!("GL version {}", gl.get_string(gl::VERSION));
+            }
         }
         self.绘制.replace(Some(绘制));
 

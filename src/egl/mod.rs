@@ -27,7 +27,6 @@ pub struct Egl管理器 {
 impl Egl管理器 {
     /// 创建并初始化 EGL
     pub fn new(平台: Egl实现) -> Result<Self, ()> {
-        // 加载 EGL 库
         let egl = match EGL.as_ref() {
             Some(egl) => egl,
             None => return Err(()),
