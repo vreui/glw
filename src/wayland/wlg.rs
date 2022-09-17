@@ -1,7 +1,5 @@
 //! wayland 全局对象管理
 
-use std::ffi;
-
 use wayland_client::{
     protocol::{wl_compositor, wl_seat, wl_shm},
     Display, GlobalManager, Main,
@@ -43,10 +41,6 @@ impl Wl全局管理器 {
 
     pub fn 取服务器(&self) -> &Display {
         &self.server
-    }
-
-    pub fn 取显示指针(&self) -> *const ffi::c_void {
-        self.server.c_ptr() as *const ffi::c_void
     }
 
     pub fn 取全局管理(&self) -> &GlobalManager {

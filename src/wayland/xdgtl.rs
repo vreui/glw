@@ -92,4 +92,8 @@ impl Xdg顶级管理器 {
     pub fn 取顶级(&self) -> &Main<xdg_toplevel::XdgToplevel> {
         &self.顶级
     }
+
+    pub fn 设标题(&mut self, 标题: String) {
+        self.顶级.set_title(标题);
+    }
 }

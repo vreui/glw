@@ -45,8 +45,7 @@ wayland-protocols = { version = "^0.29.5", features = ["client", "staging_protoc
 wayland-egl = "^0.29.5"
 wayland-cursor = "^0.29.5"
 nix = { version = "^0.25.0", features = ["fs"] }
-#mio = { version = "^0.8.4", features = ["os-ext"] }
-libc = "^0.2.132"
+#libc = "^0.2.132"
 
 # android
 [target.'cfg(target_os = "android")'.dependencies]

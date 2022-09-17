@@ -5,7 +5,6 @@ use std::{
     fs::File,
     io::{BufWriter, Seek, SeekFrom, Write},
     os::unix::io::FromRawFd,
-    rc::Rc,
 };
 
 use wayland_client::{protocol::wl_surface, Main};

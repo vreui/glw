@@ -17,6 +17,9 @@ use super::t::缓冲区类型;
 use super::wlg::Wl全局管理器;
 use super::xdgtl::Xdg顶级管理器;
 
+#[cfg(feature = "egl")]
+use crate::api::Gl类型;
+
 // 对 wayland 操作的封装
 //
 // wayland-client 0.29 API
@@ -109,6 +112,7 @@ impl Wl封装 {
         let 绘制1 = self.绘制.clone();
         let 窗口大小1 = self.窗口大小.clone();
         let 改变大小 = Box::new(move |大小: (i32, i32)| {
+            // TODO 延迟绘制
             let mut 绘制2 = 绘制1.borrow_mut();
             let 绘制 = 绘制2.as_mut().unwrap();
             绘制.改变大小(大小);
@@ -117,9 +121,9 @@ impl Wl封装 {
             窗口大小1.replace((大小.0 as f32, 大小.1 as f32));
         });
 
-        let 顶级 = Xdg顶级管理器::new(&self.全局, 窗口关闭, 改变大小);
+        let mut 顶级 = Xdg顶级管理器::new(&self.全局, 窗口关闭, 改变大小);
         // 设置窗口标题
-        顶级.取顶级().set_title(标题);
+        顶级.设标题(标题);
 
         // 输入处理
         let 输入 = 输入管理器::new(&self.全局, self.窗口大小.clone(), 顶级.取顶级().clone());
@@ -136,13 +140,6 @@ impl Wl封装 {
         #[cfg(feature = "egl")]
         if 绘制类型 == 缓冲区类型::EGL {
             绘制.初始化gl((初始大小.0 as u32, 初始大小.1 as u32));
-
-            // DEBUG
-            #[cfg(feature = "gleam")]
-            {
-                let gl = 绘制.取gl().as_ref().unwrap();
-                println!("GL version {}", gl.get_string(gl::VERSION));
-            }
         }
         self.绘制.replace(Some(绘制));
 
@@ -163,6 +160,29 @@ impl Wl封装 {
         }
 
         顶级
+    }
+
+    pub fn 取大小(&self) -> (i32, i32) {
+        let 大小 = self.窗口大小.borrow().clone();
+        (大小.0 as i32, 大小.1 as i32)
+    }
+
+    #[cfg(feature = "egl")]
+    pub fn 取gl类型(&self) -> Option<Gl类型> {
+        self.绘制
+            .borrow()
+            .as_ref()
+            .map(|绘制| 绘制.取gl类型())
+            .flatten()
+    }
+
+    #[cfg(feature = "gleam")]
+    pub fn 取gl(&self) -> Option<Rc<dyn gl::Gl>> {
+        self.绘制
+            .borrow()
+            .as_ref()
+            .map(|绘制| 绘制.取gl().clone())
+            .flatten()
     }
 
     // 用于主循环

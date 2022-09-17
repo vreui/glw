@@ -123,13 +123,11 @@ impl 窗口绘制管理器 {
         let 表面 = self.顶级.取表面();
         let egl表面 = WlEglSurface::new(表面, 大小.0 as i32, 大小.1 as i32);
 
-        let 显示指针 = self.全局.取显示指针();
-        let egl表面指针 = egl表面.ptr();
-        let egl实现 = unsafe { Egl实现::new(GL版本, 显示指针, egl表面指针).unwrap() };
+        let 显示 = self.全局.取服务器();
+        let egl实现 = Egl实现::new(GL版本, 显示, &egl表面).unwrap();
         let mut egl = Egl管理器::new(egl实现).unwrap();
-
         // 设为当前
-        unsafe { egl.设为当前().unwrap() }
+        egl.设为当前().unwrap();
 
         #[cfg(feature = "gleam")]
         {
@@ -139,6 +137,11 @@ impl 窗口绘制管理器 {
         }
         self.egl表面 = Some(egl表面);
         self.egl = Some(egl);
+    }
+
+    #[cfg(feature = "egl")]
+    pub fn 取gl类型(&self) -> Option<Gl类型> {
+        self.egl.as_ref().map(|egl| egl.接口类型())
     }
 
     #[cfg(feature = "gleam")]

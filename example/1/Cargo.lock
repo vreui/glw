@@ -86,6 +86,7 @@ checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
 name = "example1"
 version = "0.1.0"
 dependencies = [
+ "gleam",
  "glw",
 ]
 
@@ -125,23 +126,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "glutin_wgl_sys"
-version = "0.2.0"
-source = "git+https://github.com/rust-windowing/glutin#24812ca627283b1d9189cd46d8a450eea108e68d"
-dependencies = [
- "gl_generator",
-]
-
-[[package]]
 name = "glw"
 version = "0.1.0"
 dependencies = [
  "bitflags",
  "gleam",
  "glutin_egl_sys",
- "glutin_wgl_sys",
  "instant",
- "libc",
  "libloading",
  "log",
  "mint",

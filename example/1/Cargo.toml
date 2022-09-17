@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 glw = { path = "../../" }
+gleam = "0.13.1"

@@ -6,6 +6,7 @@ extern crate glutin_egl_sys;
 extern crate gleam;
 
 pub mod loadlib;
+pub mod util;
 
 use std::{ffi, rc::Rc};
 
@@ -48,7 +49,7 @@ impl Egl管理器 {
     }
 
     /// egl: make_current()
-    pub unsafe fn 设为当前(&mut self) -> Result<(), String> {
+    pub fn 设为当前(&mut self) -> Result<(), String> {
         self.平台.设为当前()
     }
 

@@ -2,6 +2,9 @@
 
 use std::{ffi, mem};
 
+use wayland_client::Display;
+use wayland_egl::WlEglSurface;
+
 use glutin_egl_sys::egl::types::{EGLAttrib, EGLConfig, EGLDisplay, EGLSurface, EGLint};
 use glutin_egl_sys::{egl, EGLContext};
 
@@ -24,10 +27,8 @@ pub struct Egl实现 {
 }
 
 impl Egl实现 {
-    pub unsafe fn new(
-        _要求: Gl要求,
-        显示指针: *const ffi::c_void,
-        egl表面指针: *const ffi::c_void,
+    pub fn new(
+        _要求: Gl要求, 显示: &Display, egl表面: &WlEglSurface
     ) -> Result<Self, String> {
         // 加载 EGL 库
         let 库 = match EGL.as_ref() {
@@ -35,15 +36,22 @@ impl Egl实现 {
             None => return Err("无法加载 EGL 库".to_string()),
         };
 
-        let 显示 = 创建显示(库, 显示指针)?;
+        let 显示指针 = 显示.c_ptr() as *const ffi::c_void;
+        let egl表面指针 = egl表面.ptr() as *const ffi::c_void;
 
-        let 可用配置 = 找配置(库, 显示, 配置模板::default())?;
-        // TODO 检查配置
-        // 使用配置
-        let 配置 = 可用配置[0];
+        let (显示, 配置, 语境, 表面) = unsafe {
+            let 显示 = 创建显示(库, 显示指针)?;
 
-        let 语境 = 创建语境(库, 显示, 配置)?;
-        let 表面 = 创建窗口表面(库, 显示, 配置, egl表面指针)?;
+            let 可用配置 = 找配置(库, 显示, 配置模板::default())?;
+            // TODO 检查配置
+            // 使用配置
+            let 配置 = 可用配置[0];
+
+            let 语境 = 创建语境(库, 显示, 配置)?;
+            let 表面 = 创建窗口表面(库, 显示, 配置, egl表面指针)?;
+
+            (显示, 配置, 语境, 表面)
+        };
 
         Ok(Self {
             库,
@@ -62,14 +70,16 @@ impl Egl实现 {
         self.类型
     }
 
-    pub unsafe fn 设为当前(&mut self) -> Result<(), String> {
-        if self
-            .库
-            .MakeCurrent(self.显示, self.表面, self.表面, self.语境)
-            == egl::FALSE
-        {
-            let 错误码 = self.库.GetError();
-            return Err(format!("无法 egl.MakeCurrent()  [{}]", 错误码));
+    pub fn 设为当前(&mut self) -> Result<(), String> {
+        unsafe {
+            if self
+                .库
+                .MakeCurrent(self.显示, self.表面, self.表面, self.语境)
+                == egl::FALSE
+            {
+                let 错误码 = self.库.GetError();
+                return Err(format!("无法 egl.MakeCurrent()  [{}]", 错误码));
+            }
         }
 
         Ok(())

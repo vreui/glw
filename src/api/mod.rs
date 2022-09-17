@@ -2,6 +2,9 @@
 
 use std::rc::Rc;
 
+#[cfg(feature = "gleam")]
+use gleam::gl;
+
 use super::内部::内部窗口;
 
 /// 要求创建 OpenGL / OpenGL ES 的类型
@@ -52,6 +55,10 @@ pub struct 窗口创建参数<'a> {
     pub 大小: (i32, i32),
     /// RGBA [0.0 ~ 1.0]
     pub 背景色: (f32, f32, f32, f32),
+
+    /// 使用 OpenGL / OpenGL ES
+    #[cfg(feature = "egl")]
+    pub gl: bool,
 }
 
 impl Default for 窗口创建参数<'_> {
@@ -61,6 +68,9 @@ impl Default for 窗口创建参数<'_> {
             大小: (1280, 720),
             // 纯黑
             背景色: (0.0, 0.0, 0.0, 1.0),
+
+            #[cfg(feature = "egl")]
+            gl: true,
         }
     }
 }
@@ -80,6 +90,11 @@ impl<'a> 窗口创建参数<'a> {
 
     pub fn 设背景色(&self, 背景色: (f32, f32, f32, f32)) -> Self {
         Self { 背景色, ..*self }
+    }
+
+    #[cfg(feature = "egl")]
+    pub fn 设gl(&self, gl: bool) -> Self {
+        Self { gl, ..*self }
     }
 }
 
@@ -143,6 +158,16 @@ impl 窗口 {
         self.内部.设背景色(背景色);
     }
 
+    #[cfg(feature = "egl")]
+    pub fn 取gl类型(&self) -> Option<Gl类型> {
+        self.内部.取gl类型()
+    }
+
+    #[cfg(feature = "gleam")]
+    pub fn 取gl(&self) -> Option<Rc<dyn gl::Gl>> {
+        self.内部.取gl()
+    }
+
     /// 默认主循环 (空窗口)
     ///
     /// 直到窗口关闭, 才会返回.
@@ -172,6 +197,12 @@ pub trait 内部窗口接口 {
     fn 取背景色(&self) -> (f32, f32, f32, f32);
 
     fn 设背景色(&mut self, 背景色: (f32, f32, f32, f32));
+
+    #[cfg(feature = "egl")]
+    fn 取gl类型(&self) -> Option<Gl类型>;
+
+    #[cfg(feature = "gleam")]
+    fn 取gl(&self) -> Option<Rc<dyn gl::Gl>>;
 
     /// 默认主循环 (空窗口)
     ///
