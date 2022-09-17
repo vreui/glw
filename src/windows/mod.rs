@@ -2,14 +2,11 @@
 
 extern crate windows;
 
-#[cfg(feature = "egl")]
-extern crate glutin_egl_sys;
-
-#[cfg(feature = "wgl")]
-extern crate glutin_wgl_sys;
-
-// TODO
+mod t;
 mod window;
+
+#[cfg(feature = "egl")]
+mod egl;
 
 pub(crate) mod 接口 {
     // TODO

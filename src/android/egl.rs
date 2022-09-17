@@ -1,9 +1,6 @@
-//! wayland 平台的 EGL 实现
+//! android 平台的 EGL 实现
 
 use std::ffi;
-
-use wayland_client::Display;
-use wayland_egl::WlEglSurface;
 
 use glutin_egl_sys::egl;
 use glutin_egl_sys::egl::types::EGLAttrib;
@@ -19,13 +16,8 @@ pub struct Egl实现 {
 }
 
 impl Egl实现 {
-    pub fn new(
-        要求: Gl要求, 显示: &Display, egl表面: &WlEglSurface
-    ) -> Result<Self, String> {
+    pub unsafe fn new(要求: Gl要求, 表面指针: *const ffi::c_void) -> Result<Self, String> {
         let 库 = 加载库()?;
-
-        let 显示指针 = 显示.c_ptr() as *const ffi::c_void;
-        let egl表面指针 = egl表面.ptr() as *const ffi::c_void;
 
         let (显示, 配置, 语境, 表面, 类型) = unsafe {
             let (显示, 版本) = {
@@ -33,22 +25,33 @@ impl Egl实现 {
                 属性.push(egl::NONE as EGLAttrib);
 
                 let 平台 = (
-                    // EGL_KHR_platform_wayland
-                    egl::PLATFORM_WAYLAND_KHR,
-                    // EGL_EXT_platform_wayland
-                    egl::PLATFORM_WAYLAND_EXT,
-                    // 不使用 egl.GetDisplay()
+                    // EGL_KHR_platform_android
+                    egl::PLATFORM_ANDROID_KHR,
+                    // 不使用 egl.GetPlatformDisplayEXT()
                     0,
+                    // 使用 egl.GetDisplay()
+                    1,
                 );
+                let 显示指针 = egl::DEFAULT_DISPLAY as *mut _;
                 创建显示(库, 平台, 属性, 显示指针)?
             };
             // DEBUG
             println!("EGL 版本 {}.{}", 版本.0, 版本.1);
 
-            let 配置 = 找配置(库, 显示, egl::OPENGL_BIT | egl::OPENGL_ES3_BIT)?;
+            // OpenGL ES 3.0
+            let 配置 = 找配置(库, 显示, egl::OPENGL_ES3_BIT)?;
+
+            let 要求 = match 要求 {
+                Gl要求::Gl => {
+                    return Err("Android 平台不支持 OpenGL".to_string());
+                }
+                Gl要求::Gles { gles版本 } => Gl要求::Gles { gles版本 },
+                Gl要求::GlGles { gles版本, .. } => Gl要求::Gles { gles版本 },
+                Gl要求::GlesGl { gles版本, .. } => Gl要求::Gles { gles版本 },
+            };
             let (语境, 类型) = 创建语境(库, 显示, 配置, 要求)?;
 
-            let 表面 = 创建窗口表面(库, 显示, 配置, egl表面指针)?;
+            let 表面 = 创建窗口表面(库, 显示, 配置, 表面指针)?;
 
             (显示, 配置, 语境, 表面, 类型)
         };

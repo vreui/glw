@@ -46,26 +46,31 @@ pub unsafe fn 交换缓冲区(封: &Egl封装) -> Result<(), String> {
 // 创建 EGLDisplay 并初始化 EGL 库
 pub unsafe fn 创建显示(
     库: &Egl库,
-    平台: (EGLenum, EGLenum),
+    // GetPlatformDisplay(), GetPlatformDisplayEXT(), GetDisplay()
+    平台: (EGLenum, EGLenum, i32),
     属性: Vec<EGLAttrib>,
     显示指针: *const ffi::c_void,
 ) -> Result<(EGLDisplay, (i32, i32)), String> {
-    let 显示 = if 库.GetPlatformDisplay.is_loaded() {
+    let 显示 = if 库.GetPlatformDisplay.is_loaded() && (平台.0 != 0) {
         库.GetPlatformDisplay(平台.0, 显示指针 as *mut _, 属性.as_ptr())
-    } else if 库.GetPlatformDisplayEXT.is_loaded() {
+    } else if 库.GetPlatformDisplayEXT.is_loaded() && (平台.1 != 0) {
         库.GetPlatformDisplayEXT(平台.1, 显示指针 as *mut _, 属性.as_ptr() as *const _)
+    } else if 平台.2 != 0 {
+        库.GetDisplay(显示指针 as *mut _)
     } else {
         return Err("无法获取 EGLDisplay (is_loaded)".to_string());
     };
 
     if 显示 == egl::NO_DISPLAY {
-        return Err("无法获取 EGLDisplay (NO_DISPLAY)".to_string());
+        let 错误码 = 库.GetError();
+        return Err(format!("无法获取 EGLDisplay (NO_DISPLAY)  [{}]", 错误码));
     }
 
     // 初始化 EGL 库
     let (mut 主, mut 次) = (0, 0);
     if 库.Initialize(显示, &mut 主, &mut 次) == egl::FALSE {
-        return Err("初始化 EGL 库失败 (FALSE)".to_string());
+        let 错误码 = 库.GetError();
+        return Err(format!("初始化 EGL 库失败 (FALSE)  [{}]", 错误码));
     }
 
     Ok((显示, (主, 次)))
@@ -144,7 +149,8 @@ pub unsafe fn 找配置(
         &mut 配置数,
     );
     if 结果 == egl::FALSE {
-        return Err("未找到可用 EGL 配置 (FALSE)".to_string());
+        let 错误码 = 库.GetError();
+        return Err(format!("未找到可用 EGL 配置 (FALSE)  [{}]", 错误码));
     }
     可用配置.set_len(配置数 as usize);
 
@@ -260,7 +266,8 @@ pub unsafe fn 创建窗口表面(
     // TODO  CreatePlatformWindowSurfaceEXT()  CreateWindowSurface()
 
     if 表面 == egl::NO_SURFACE {
-        return Err("无法创建 WindowSurface (NO_SURFACE)".to_string());
+        let 错误码 = 库.GetError();
+        return Err(format!("无法创建 WindowSurface (NO_SURFACE)  [{}]", 错误码));
     }
 
     Ok(表面)
