@@ -1,34 +1,50 @@
-// TODO
+//! 窗口封装
 
 use windows::{
-    core::*, Win32::Foundation::*, Win32::Graphics::Gdi::ValidateRect,
-    Win32::System::LibraryLoader::GetModuleHandleA, Win32::UI::WindowsAndMessaging::*,
+    core::{Error, HSTRING, PCWSTR},
+    w,
+    Win32::Foundation::{HINSTANCE, HWND, LPARAM, LRESULT, WPARAM},
+    Win32::Graphics::Gdi::ValidateRect,
+    Win32::System::LibraryLoader::GetModuleHandleW,
+    Win32::UI::WindowsAndMessaging::{
+        CreateWindowExW, DefWindowProcW, DispatchMessageW, GetMessageW, LoadCursorW,
+        PostQuitMessage, RegisterClassExW, CS_HREDRAW, CS_VREDRAW, CW_USEDEFAULT, IDC_ARROW, MSG,
+        WINDOW_EX_STYLE, WM_DESTROY, WM_PAINT, WNDCLASSEXW, WS_OVERLAPPEDWINDOW, WS_VISIBLE,
+    },
 };
 
-fn main() -> Result<()> {
-    unsafe {
-        let instance = GetModuleHandleA(None)?;
-        debug_assert!(instance.0 != 0);
+pub struct 窗口封装 {
+    实例: HINSTANCE,
 
-        let window_class = s!("window");
+    窗口: HWND,
+}
 
-        let wc = WNDCLASSA {
+impl 窗口封装 {
+    pub unsafe fn new(标题: &str) -> Result<Self, Error> {
+        let 实例 = GetModuleHandleW(None)?;
+        // 实例.0 != 0
+
+        let 窗口类名 = PCWSTR::from(w!("glw_window"));
+
+        let 窗口类 = WNDCLASSEXW {
             hCursor: LoadCursorW(None, IDC_ARROW)?,
-            hInstance: instance,
-            lpszClassName: window_class,
+            hInstance: 实例,
+            lpszClassName: 窗口类名,
 
             style: CS_HREDRAW | CS_VREDRAW,
-            lpfnWndProc: Some(wndproc),
+            lpfnWndProc: Some(glw_wndproc),
             ..Default::default()
         };
+        // 注册窗口类
+        let _a = RegisterClassExW(&窗口类);
+        // a != 0
 
-        let atom = RegisterClassA(&wc);
-        debug_assert!(atom != 0);
-
-        CreateWindowExA(
+        let 标题 = PCWSTR::from(&HSTRING::from(标题));
+        // 创建窗口
+        let 窗口 = CreateWindowExW(
             WINDOW_EX_STYLE::default(),
-            window_class,
-            s!("This is a sample window"),
+            窗口类名,
+            标题,
             WS_OVERLAPPEDWINDOW | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -36,26 +52,37 @@ fn main() -> Result<()> {
             CW_USEDEFAULT,
             None,
             None,
-            instance,
+            实例,
             std::ptr::null(),
         );
 
-        let mut message = MSG::default();
+        Ok(Self { 实例, 窗口 })
+    }
 
-        while GetMessageA(&mut message, HWND(0), 0, 0).into() {
-            DispatchMessageA(&message);
+    pub unsafe fn 主循环(&mut self) {
+        let mut 消息 = MSG::default();
+
+        // FIXME
+        println!("GetMessageW");
+        while GetMessageW(&mut 消息, HWND(0), 0, 0).into() {
+            // FIXME
+            println!("DispatchMessageW");
+            DispatchMessageW(&消息);
         }
-
-        Ok(())
     }
 }
 
-extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+// 窗口回调函数
+extern "system" fn glw_wndproc(
+    窗口: HWND, 消息: u32, w参数: WPARAM, l参数: LPARAM
+) -> LRESULT {
     unsafe {
-        match message as u32 {
+        // FIXME
+        println!("glw_wndproc  消息 {}", 消息);
+        match 消息 {
             WM_PAINT => {
                 println!("WM_PAINT");
-                ValidateRect(window, None);
+                ValidateRect(窗口, None);
                 LRESULT(0)
             }
             WM_DESTROY => {
@@ -63,9 +90,7 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
                 PostQuitMessage(0);
                 LRESULT(0)
             }
-            _ => DefWindowProcA(window, message, wparam, lparam),
+            _ => DefWindowProcW(窗口, 消息, w参数, l参数),
         }
     }
 }
-
-// TODO

@@ -15,11 +15,11 @@ fn main() {
         gl: true,
     });
 
-    let gl = 窗.取gl().unwrap();
-    // DEBUG
-    println!("GL version {}", gl.get_string(gl::VERSION));
-    println!("GL vendor {}", gl.get_string(gl::VENDOR));
-    println!("GL renderer {}", gl.get_string(gl::RENDERER));
+    // let gl = 窗.取gl().unwrap();
+    // // DEBUG
+    // println!("GL version {}", gl.get_string(gl::VERSION));
+    // println!("GL vendor {}", gl.get_string(gl::VENDOR));
+    // println!("GL renderer {}", gl.get_string(gl::RENDERER));
 
     println!("进入主循环");
     窗.主循环();

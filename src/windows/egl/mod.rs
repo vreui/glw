@@ -20,12 +20,15 @@ pub struct Egl实现 {
 }
 
 impl Egl实现 {
-    pub unsafe fn new(要求: Gl要求, 窗口指针: *const ffi::c_void) -> Result<Self, String> {
+    // 显示指针: GetDC()
+    pub unsafe fn new(
+        要求: Gl要求,
+        显示指针: *const ffi::c_void,
+        窗口指针: *const ffi::c_void,
+    ) -> Result<Self, String> {
         let 库 = 加载库()?;
 
-        let 显示指针 = egl::DEFAULT_DISPLAY as *mut _;
-
-        let (显示, 配置, 语境, 表面, 类型) = unsafe {
+        let (显示, 配置, 语境, 表面, 类型) = {
             // ANGLE: OpenGL ES 3.0
             let (显示, 版本) = {
                 let mut 属性 = Vec::<EGLAttrib>::new();
@@ -48,7 +51,7 @@ impl Egl实现 {
             let 配置 = 找配置(库, 显示, egl::OPENGL_ES3_BIT)?;
 
             let 要求 = match 要求 {
-                Gl要求::Gl => {
+                Gl要求::Gl { .. } => {
                     return Err("windows 平台不支持 OpenGL".to_string());
                 }
                 Gl要求::Gles { gles版本 } => Gl要求::Gles { gles版本 },

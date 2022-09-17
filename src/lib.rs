@@ -40,14 +40,14 @@ pub mod web;
 pub mod windows;
 
 // 内部实现
+#[cfg(target_os = "windows")]
+use crate::windows::接口 as 内部;
 #[cfg(target_os = "android")]
 use android::接口 as 内部;
 #[cfg(target_os = "linux")]
 use wayland::接口 as 内部;
 #[cfg(target_arch = "wasm32")]
 use web::接口 as 内部;
-#[cfg(target_os = "windows")]
-use windows::接口 as 内部;
 
 // 导出
 pub use api::{窗口, 窗口创建参数};
