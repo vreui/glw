@@ -74,7 +74,14 @@ Windows 7 安装 rust 会遇到一堆坑, 对于重新安装的 Windows 7 sp1 �
 
    然后 rust 也很快装好了.  ;-)
 
-----
 
+## Windows 7: 缺少 `VCRUNTIME140.dll`
+
+需要安装 `Microsoft Visual C++ 2015 Redistributable` (`vc_redist.x64.exe`).
+
+从这里下载: <https://www.microsoft.com/en-us/download/details.aspx?id=52685>
+
+
+----
 
 TODO

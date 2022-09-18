@@ -2,7 +2,7 @@
 
 mod angle;
 
-use std::ffi;
+use std::{env, ffi};
 
 use glutin_egl_sys::egl;
 use glutin_egl_sys::egl::types::EGLAttrib;
@@ -13,7 +13,9 @@ use crate::egl::util::{
     Egl封装, 交换缓冲区, 创建显示, 创建窗口表面, 创建语境, 加载库, 找配置, 设为当前,
 };
 
-use angle::PLATFORM_ANGLE_ANGLE;
+use super::t::ANGLE后端环境变量;
+
+use angle::{Angle后端, PLATFORM_ANGLE_ANGLE, PLATFORM_ANGLE_TYPE_ANGLE};
 
 pub struct Egl实现 {
     封装: Egl封装,
@@ -28,19 +30,36 @@ impl Egl实现 {
     ) -> Result<Self, String> {
         let 库 = 加载库()?;
 
+        // ANGLE 后端环境变量
+        let 环境变量 = env::var(ANGLE后端环境变量).unwrap_or("".to_string());
+        // DEBUG
+        if 环境变量 != "" {
+            println!("ANGLE_BACKEND={}", 环境变量);
+        }
+        let 后端 = Angle后端::from(环境变量.as_str());
+
         let (显示, 配置, 语境, 表面, 类型) = {
             // ANGLE: OpenGL ES 3.0
             let (显示, 版本) = {
                 let mut 属性 = Vec::<EGLAttrib>::new();
+                match 后端.平台类型().unwrap() {
+                    None => {}
+                    Some(类型) => {
+                        属性.push(PLATFORM_ANGLE_TYPE_ANGLE as EGLAttrib);
+                        属性.push(类型 as EGLAttrib);
+                    }
+                }
+                // 结束
                 属性.push(egl::NONE as EGLAttrib);
 
                 let 平台 = (
+                    // 不使用 egl.GetPlatformDisplay()
+                    0,
                     // EGL_ANGLE_platform_angle
+                    // 使用 egl.GetPlatformDisplayEXT()
                     PLATFORM_ANGLE_ANGLE,
-                    // EGL_ANGLE_platform_angle
-                    PLATFORM_ANGLE_ANGLE,
-                    // 使用 egl.GetDisplay()
-                    1,
+                    // 不使用 egl.GetDisplay()
+                    0,
                 );
                 创建显示(库, 平台, 属性, 显示指针)?
             };
