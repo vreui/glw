@@ -2,16 +2,31 @@
 
 use windows::{
     core::{Error, HSTRING, PCWSTR},
-    w,
-    Win32::Foundation::{HINSTANCE, HWND, LPARAM, LRESULT, WPARAM},
+    Win32::Foundation::{GetLastError, HINSTANCE, HWND, LPARAM, LRESULT, WPARAM},
     Win32::Graphics::Gdi::ValidateRect,
     Win32::System::LibraryLoader::GetModuleHandleW,
     Win32::UI::WindowsAndMessaging::{
         CreateWindowExW, DefWindowProcW, DispatchMessageW, GetMessageW, LoadCursorW,
-        PostQuitMessage, RegisterClassExW, CS_HREDRAW, CS_VREDRAW, CW_USEDEFAULT, IDC_ARROW, MSG,
-        WINDOW_EX_STYLE, WM_DESTROY, WM_PAINT, WNDCLASSEXW, WS_OVERLAPPEDWINDOW, WS_VISIBLE,
+        PostQuitMessage, RegisterClassExW, ShowWindow, CS_HREDRAW, CS_VREDRAW, CW_USEDEFAULT,
+        IDC_ARROW, MSG, SW_SHOWNORMAL, WINDOW_EX_STYLE, WM_DESTROY, WM_PAINT, WNDCLASSEXW,
+        WS_OVERLAPPEDWINDOW, WS_VISIBLE,
     },
 };
+
+#[derive(Debug)]
+pub struct 错误(String);
+
+impl From<Error> for 错误 {
+    fn from(error: Error) -> Self {
+        错误(format!("{:?}", error))
+    }
+}
+
+impl From<String> for 错误 {
+    fn from(文本: String) -> Self {
+        错误(文本)
+    }
+}
 
 pub struct 窗口封装 {
     实例: HINSTANCE,
@@ -20,26 +35,39 @@ pub struct 窗口封装 {
 }
 
 impl 窗口封装 {
-    pub unsafe fn new(标题: &str) -> Result<Self, Error> {
+    pub unsafe fn new(标题: &str) -> Result<Self, 错误> {
         let 实例 = GetModuleHandleW(None)?;
-        // 实例.0 != 0
+        if 实例.0 == 0 {
+            return Err(错误(format!("GetModuleHandleW()  {:?}", 实例)));
+        }
 
-        let 窗口类名 = PCWSTR::from(w!("glw_window"));
+        // 防止字符串内存被回收
+        let 窗口类名1 = HSTRING::from("glw_window");
+        let 窗口类名 = PCWSTR::from(&窗口类名1);
 
         let 窗口类 = WNDCLASSEXW {
-            hCursor: LoadCursorW(None, IDC_ARROW)?,
+            // 注意: cbSize 默认是 0 (Default::default), 需要手动设置正确
+            cbSize: std::mem::size_of::<WNDCLASSEXW>() as u32,
+
             hInstance: 实例,
             lpszClassName: 窗口类名,
+            lpfnWndProc: Some(glw_wndproc),
 
             style: CS_HREDRAW | CS_VREDRAW,
-            lpfnWndProc: Some(glw_wndproc),
+            hCursor: LoadCursorW(None, IDC_ARROW)?,
+
             ..Default::default()
         };
-        // 注册窗口类
-        let _a = RegisterClassExW(&窗口类);
-        // a != 0
 
-        let 标题 = PCWSTR::from(&HSTRING::from(标题));
+        // 注册窗口类
+        let a = RegisterClassExW(&窗口类);
+        if a == 0 {
+            return Err(错误(format!("RegisterClassExW()  {:?}", a)));
+        }
+
+        // 防止字符串内存被回收
+        let 标题1 = HSTRING::from(标题);
+        let 标题 = PCWSTR::from(&标题1);
         // 创建窗口
         let 窗口 = CreateWindowExW(
             WINDOW_EX_STYLE::default(),
@@ -55,18 +83,24 @@ impl 窗口封装 {
             实例,
             std::ptr::null(),
         );
+        if 窗口.0 == 0 {
+            let 错误码 = GetLastError();
+            return Err(错误(format!(
+                "CreateWindowExW()  {:?}  [{:?}]",
+                窗口, 错误码
+            )));
+        }
 
         Ok(Self { 实例, 窗口 })
     }
 
     pub unsafe fn 主循环(&mut self) {
+        // 显示窗口
+        ShowWindow(self.窗口, SW_SHOWNORMAL);
+
         let mut 消息 = MSG::default();
 
-        // FIXME
-        println!("GetMessageW");
         while GetMessageW(&mut 消息, HWND(0), 0, 0).into() {
-            // FIXME
-            println!("DispatchMessageW");
             DispatchMessageW(&消息);
         }
     }
@@ -77,8 +111,6 @@ extern "system" fn glw_wndproc(
     窗口: HWND, 消息: u32, w参数: WPARAM, l参数: LPARAM
 ) -> LRESULT {
     unsafe {
-        // FIXME
-        println!("glw_wndproc  消息 {}", 消息);
         match 消息 {
             WM_PAINT => {
                 println!("WM_PAINT");
