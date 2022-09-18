@@ -10,12 +10,15 @@ use glutin_egl_sys::egl::types::EGLAttrib;
 use crate::api::{Gl类型, Gl要求};
 
 use crate::egl::util::{
-    Egl封装, 交换缓冲区, 创建显示, 创建窗口表面, 创建语境, 加载库, 找配置, 设为当前,
+    Egl封装, 交换缓冲区, 创建显示, 创建窗口表面, 创建语境, 加载库, 取扩展, 找配置, 设为当前,
 };
 
 use super::t::ANGLE后端环境变量;
 
-use angle::{Angle后端, PLATFORM_ANGLE_ANGLE, PLATFORM_ANGLE_TYPE_ANGLE};
+use angle::{
+    Angle后端, PLATFORM_ANGLE_ANGLE, PLATFORM_ANGLE_D3D11ON12_ANGLE,
+    PLATFORM_ANGLE_DEVICE_TYPE_ANGLE, PLATFORM_ANGLE_TYPE_ANGLE,
+};
 
 pub struct Egl实现 {
     封装: Egl封装,
@@ -29,6 +32,10 @@ impl Egl实现 {
         窗口指针: *const ffi::c_void,
     ) -> Result<Self, String> {
         let 库 = 加载库()?;
+
+        // DEBUG
+        let 扩展 = 取扩展(库, egl::NO_DISPLAY);
+        println!("EGL extension: {}", 扩展);
 
         // ANGLE 后端环境变量
         let 环境变量 = env::var(ANGLE后端环境变量).unwrap_or("".to_string());
@@ -47,17 +54,33 @@ impl Egl实现 {
                     Some(类型) => {
                         属性.push(PLATFORM_ANGLE_TYPE_ANGLE as EGLAttrib);
                         属性.push(类型 as EGLAttrib);
+
+                        if 后端 == Angle后端::D3d11on12 {
+                            属性.push(PLATFORM_ANGLE_D3D11ON12_ANGLE as EGLAttrib);
+                            属性.push(egl::TRUE as EGLAttrib);
+                        }
+                    }
+                }
+                match 后端.设备类型() {
+                    None => {}
+                    Some(设备) => {
+                        属性.push(PLATFORM_ANGLE_DEVICE_TYPE_ANGLE as EGLAttrib);
+                        属性.push(设备 as EGLAttrib);
                     }
                 }
                 // 结束
                 属性.push(egl::NONE as EGLAttrib);
+                // DEBUG
+                println!("属性 {:?}", 属性);
 
+                // 注意: 此处应该使用 GetPlatformDisplay() 而不是 GetPlatformDisplayEXT()
+                // ANGLE 官方文档中写的使用 GetPlatformDisplayEXT() 是错的
                 let 平台 = (
-                    // 不使用 egl.GetPlatformDisplay()
-                    0,
+                    // 使用 egl.GetPlatformDisplay()
                     // EGL_ANGLE_platform_angle
-                    // 使用 egl.GetPlatformDisplayEXT()
                     PLATFORM_ANGLE_ANGLE,
+                    // 不使用 egl.GetPlatformDisplayEXT()
+                    0,
                     // 不使用 egl.GetDisplay()
                     0,
                 );

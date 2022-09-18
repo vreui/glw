@@ -30,6 +30,7 @@ pub const PLATFORM_ANGLE_TYPE_D3D11_ANGLE: EGLenum = 0x3208;
 
 // EGL_ANGLE_platform_angle_d3d11on12
 // #define EGL_PLATFORM_ANGLE_D3D11ON12_ANGLE 0x3488
+pub const PLATFORM_ANGLE_D3D11ON12_ANGLE: EGLenum = 0x3488;
 
 // EGL_ANGLE_platform_angle_opengl
 // #define EGL_PLATFORM_ANGLE_TYPE_OPENGL_ANGLE 0x320D
@@ -56,12 +57,14 @@ pub const PLATFORM_ANGLE_DEVICE_TYPE_EGL_ANGLE: EGLenum = 0x348e;
 // #define EGL_CONTEXT_VIRTUALIZATION_GROUP_ANGLE 0x3481
 
 // ANGLE 后端类型
+#[derive(Debug, Clone, PartialEq)]
 pub enum Angle后端 {
     默认,
 
     Null,
     D3d9,
     D3d11,
+    D3d11on12,
     Gl,
     Gles,
     Swiftshader,
@@ -71,17 +74,27 @@ pub enum Angle后端 {
 }
 
 impl Angle后端 {
+    // EGL_PLATFORM_ANGLE_TYPE_ANGLE
     pub fn 平台类型(&self) -> Result<Option<EGLenum>, String> {
         match self {
             Angle后端::默认 => Ok(None),
             Angle后端::Null => Ok(Some(PLATFORM_ANGLE_TYPE_NULL_ANGLE)),
             Angle后端::D3d9 => Ok(Some(PLATFORM_ANGLE_TYPE_D3D9_ANGLE)),
             Angle后端::D3d11 => Ok(Some(PLATFORM_ANGLE_TYPE_D3D11_ANGLE)),
+            Angle后端::D3d11on12 => Ok(Some(PLATFORM_ANGLE_TYPE_D3D11_ANGLE)),
             Angle后端::Gl => Ok(Some(PLATFORM_ANGLE_TYPE_OPENGL_ANGLE)),
             Angle后端::Gles => Ok(Some(PLATFORM_ANGLE_TYPE_OPENGLES_ANGLE)),
             Angle后端::Swiftshader => Ok(Some(PLATFORM_ANGLE_TYPE_VULKAN_ANGLE)),
             Angle后端::Vulkan => Ok(Some(PLATFORM_ANGLE_TYPE_VULKAN_ANGLE)),
             Angle后端::未知(名称) => Err(format!("未知 ANGLE 后端 {}", 名称)),
+        }
+    }
+
+    // EGL_PLATFORM_ANGLE_DEVICE_TYPE_ANGLE
+    pub fn 设备类型(&self) -> Option<EGLenum> {
+        match self {
+            Angle后端::Swiftshader => Some(PLATFORM_ANGLE_DEVICE_TYPE_SWIFTSHADER_ANGLE),
+            _ => None,
         }
     }
 }
@@ -93,6 +106,7 @@ impl From<&str> for Angle后端 {
             "null" => Angle后端::Null,
             "d3d9" => Angle后端::D3d9,
             "d3d11" => Angle后端::D3d11,
+            "d3d11on12" => Angle后端::D3d11on12,
             "gl" => Angle后端::Gl,
             "gles" => Angle后端::Gles,
             "swiftshader" => Angle后端::Swiftshader,

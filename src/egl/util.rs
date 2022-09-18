@@ -134,25 +134,26 @@ pub unsafe fn 找配置(
     属性.push(egl::NONE as EGLint);
 
     // 获取配置数
-    let mut 配置数 = 0 as EGLint;
-    库.GetConfigs(显示, std::ptr::null_mut(), 0, &mut 配置数);
+    let mut 配置字节数 = 0 as EGLint;
+    库.GetConfigs(显示, std::ptr::null_mut(), 0, &mut 配置字节数);
     // DEBUG
-    println!("EGL 配置数  {}", 配置数);
+    let 配置数 = 配置字节数 / (mem::size_of::<EGLConfig>() as i32);
+    println!("EGL 配置字节数 {}, 配置数 {}", 配置字节数, 配置数);
 
-    let mut 可用配置: Vec<EGLConfig> = vec![mem::zeroed(); 配置数 as usize];
+    let mut 可用配置: Vec<EGLConfig> = vec![mem::zeroed(); 配置字节数 as usize];
 
     let 结果 = 库.ChooseConfig(
         显示,
         属性.as_ptr(),
         可用配置.as_mut_ptr(),
-        配置数 as EGLint,
-        &mut 配置数,
+        配置字节数 as EGLint,
+        &mut 配置字节数,
     );
     if 结果 == egl::FALSE {
         let 错误码 = 库.GetError();
         return Err(format!("未找到可用 EGL 配置 (FALSE)  [{}]", 错误码));
     }
-    可用配置.set_len(配置数 as usize);
+    可用配置.set_len(配置字节数 as usize);
 
     if 可用配置.len() < 1 {
         return Err(format!("未找到可用 EGL 配置 ({})", 可用配置.len()));
@@ -271,4 +272,17 @@ pub unsafe fn 创建窗口表面(
     }
 
     Ok(表面)
+}
+
+// 获取 EGL extension 扩展
+pub fn 取扩展(库: &Egl库, 显示: EGLDisplay) -> String {
+    unsafe {
+        let 扩展 = 库.QueryString(显示, egl::EXTENSIONS as i32);
+        if 扩展.is_null() {
+            return "".to_string();
+        }
+        let 结果1 = ffi::CStr::from_ptr(扩展);
+        let 结果 = 结果1.to_str().unwrap_or("");
+        结果.to_string()
+    }
 }
