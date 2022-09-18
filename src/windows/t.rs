@@ -7,5 +7,3 @@ use crate::api::Gl要求;
 // 使用 ANGLE: OpenGL ES 3.0 (Direct3D 11, Windows 7)
 #[cfg(feature = "egl")]
 pub const GL版本: Gl要求 = Gl要求::Gles { gles版本: (3, 0) };
-
-// TODO

@@ -39,3 +39,25 @@ jobs:
           if-no-files-found: error
           name: libglw.rlib
           path: target/release/libglw.rlib
+
+  build_win:
+    runs-on: windows-latest
+    # 大约用时 ? 分钟
+    #timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v2
+
+      # cache cargo
+      - uses: actions/cache@v2
+        with:
+          path: ~/.cargo
+          key: ${{ runner.os }}-cargo-1
+      # rust 编译工具
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+      - run: cargo --version
+
+      - run: cargo test
+      - run: cargo build --release
