@@ -23,6 +23,10 @@ pub(crate) mod 接口 {
 
     #[cfg(feature = "egl")]
     use crate::api::Gl类型;
+    #[cfg(feature = "egl")]
+    use crate::egl::Egl管理器;
+    #[cfg(feature = "gleam")]
+    use crate::egl::初始化gleam;
 
     // TODO 多窗口支持
     pub struct 内部窗口 {
@@ -32,19 +36,50 @@ pub(crate) mod 接口 {
         背景色: Rc<RefCell<(f32, f32, f32, f32)>>,
 
         封装: 窗口封装,
+
+        #[cfg(feature = "egl")]
+        egl: Option<Egl管理器>,
+        #[cfg(feature = "gleam")]
+        gl: Option<Rc<dyn gl::Gl>>,
     }
 
     impl 内部窗口 {
         pub fn new(参数: 窗口创建参数) -> Self {
             let 背景色 = Rc::new(RefCell::new(参数.背景色));
 
-            let 封装 = unsafe { 窗口封装::new(&参数.标题).unwrap() };
+            let mut 封装 = unsafe { 窗口封装::new(&参数.标题).unwrap() };
+
+            #[cfg(feature = "egl")]
+            let mut egl: Option<Egl管理器> = None;
+            #[cfg(feature = "gleam")]
+            let mut gl: Option<Rc<dyn gl::Gl>> = None;
+
+            // 初始化 GL
+            #[cfg(feature = "egl")]
+            if 参数.gl {
+                let 实现 = unsafe { 封装.初始化gl().unwrap() };
+                let mut 管理器 = Egl管理器::new(实现).unwrap();
+
+                #[cfg(feature = "gleam")]
+                {
+                    gl = Some(初始化gleam(&管理器));
+                }
+                // 设为当前
+                管理器.设为当前().unwrap();
+
+                egl = Some(管理器);
+            }
 
             Self {
                 非线程安全: Rc::new(()),
                 背景色,
 
                 封装,
+
+                #[cfg(feature = "egl")]
+                egl,
+                #[cfg(feature = "gleam")]
+                gl,
             }
         }
     }
@@ -81,14 +116,12 @@ pub(crate) mod 接口 {
 
         #[cfg(feature = "egl")]
         fn 取gl类型(&self) -> Option<Gl类型> {
-            // TODO
-            None
+            self.egl.as_ref().map(|egl| egl.接口类型())
         }
 
         #[cfg(feature = "gleam")]
         fn 取gl(&self) -> Option<Rc<dyn gl::Gl>> {
-            // TODO
-            None
+            self.gl.as_ref().map(|g| g.clone())
         }
 
         fn 主循环(&mut self) {

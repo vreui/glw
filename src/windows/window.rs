@@ -1,9 +1,11 @@
 //! 窗口封装
 
+use std::ffi;
+
 use windows::{
     core::{Error, HSTRING, PCWSTR},
     Win32::Foundation::{GetLastError, HINSTANCE, HWND, LPARAM, LRESULT, WPARAM},
-    Win32::Graphics::Gdi::ValidateRect,
+    Win32::Graphics::Gdi::{GetDC, ValidateRect},
     Win32::System::LibraryLoader::GetModuleHandleW,
     Win32::UI::WindowsAndMessaging::{
         CreateWindowExW, DefWindowProcW, DispatchMessageW, GetMessageW, LoadCursorW,
@@ -12,6 +14,11 @@ use windows::{
         WS_OVERLAPPEDWINDOW, WS_VISIBLE,
     },
 };
+
+#[cfg(feature = "egl")]
+use super::egl::Egl实现;
+#[cfg(feature = "egl")]
+use super::t::GL版本;
 
 #[derive(Debug)]
 pub struct 错误(String);
@@ -92,6 +99,14 @@ impl 窗口封装 {
         }
 
         Ok(Self { 实例, 窗口 })
+    }
+
+    #[cfg(feature = "egl")]
+    pub unsafe fn 初始化gl(&mut self) -> Result<Egl实现, String> {
+        let 显示指针 = GetDC(self.窗口).0 as *const ffi::c_void;
+        let 窗口指针 = self.窗口.0 as *const ffi::c_void;
+
+        Egl实现::new(GL版本, 显示指针, 窗口指针)
     }
 
     pub unsafe fn 主循环(&mut self) {
