@@ -13,9 +13,10 @@ use windows::{
     Win32::System::LibraryLoader::GetModuleHandleW,
     Win32::UI::WindowsAndMessaging::{
         CreateWindowExW, DefWindowProcW, DispatchMessageW, GetMessageW, GetWindowLongPtrW,
-        LoadCursorW, PostQuitMessage, RegisterClassExW, SetWindowLongPtrW, ShowWindow, CS_HREDRAW,
-        CS_VREDRAW, CW_USEDEFAULT, IDC_ARROW, MSG, SW_SHOWNORMAL, WINDOW_EX_STYLE,
-        WINDOW_LONG_PTR_INDEX, WM_DESTROY, WM_PAINT, WNDCLASSEXW, WS_OVERLAPPEDWINDOW, WS_VISIBLE,
+        KillTimer, LoadCursorW, PostQuitMessage, RegisterClassExW, SetTimer, SetWindowLongPtrW,
+        ShowWindow, CS_HREDRAW, CS_VREDRAW, CW_USEDEFAULT, IDC_ARROW, MSG, SW_SHOWNORMAL,
+        WINDOW_EX_STYLE, WINDOW_LONG_PTR_INDEX, WM_DESTROY, WM_LBUTTONDOWN, WM_PAINT, WM_SIZE,
+        WM_TIMER, WNDCLASSEXW, WS_OVERLAPPEDWINDOW, WS_VISIBLE,
     },
 };
 
@@ -165,6 +166,14 @@ impl 窗口封装 {
     }
 }
 
+const fn loword(x: u32) -> u16 {
+    (x & 0xFFFF) as u16
+}
+
+const fn hiword(x: u32) -> u16 {
+    ((x >> 16) & 0xFFFF) as u16
+}
+
 // 窗口回调函数
 extern "system" fn glw_wndproc(
     窗口: HWND, 消息: u32, w参数: WPARAM, l参数: LPARAM
@@ -174,9 +183,38 @@ extern "system" fn glw_wndproc(
         指针 as *const 窗口数据
     }
 
+    const 重绘定时器: usize = 1;
+
     unsafe {
         match 消息 {
+            WM_SIZE => {
+                // 获取新的窗口大小
+                let 大小 = (loword(l参数.0 as u32), hiword(l参数.0 as u32));
+                // DEBUG
+                println!("WM_SIZE {:?}", 大小);
+
+                // 延迟重绘窗口 10ms
+                SetTimer(窗口, 重绘定时器, 10, None);
+
+                RedrawWindow(窗口, None, None, RDW_INVALIDATE);
+                LRESULT(0)
+            }
+            WM_TIMER => {
+                // 延迟重绘窗口: 用于修复改变大小的渲染 BUG
+                if w参数.0 == 重绘定时器 {
+                    RedrawWindow(窗口, None, None, RDW_INVALIDATE);
+
+                    // 只重绘一次
+                    KillTimer(窗口, 重绘定时器);
+                }
+
+                LRESULT(0)
+            }
+
             WM_PAINT => {
+                // DEBUG
+                println!("WM_PAINT");
+
                 // 绘制回调
                 let 数据 = 取窗口数据(窗口);
                 RefMut::map((*数据).绘制回调.borrow_mut(), |a| {
@@ -192,6 +230,16 @@ extern "system" fn glw_wndproc(
                 ValidateRect(窗口, None);
                 LRESULT(0)
             }
+
+            // 鼠标键盘消息
+            WM_LBUTTONDOWN => {
+                println!("WM_LBUTTONDOWN");
+                // DEBUG
+                RedrawWindow(窗口, None, None, RDW_INVALIDATE);
+
+                LRESULT(0)
+            }
+
             WM_DESTROY => {
                 println!("WM_DESTROY");
                 PostQuitMessage(0);

@@ -137,9 +137,6 @@ impl Egl实现 {
 pub fn 窗口默认绘制(g: &Rc<dyn gl::Gl>, 颜色: (f32, f32, f32, f32)) {
     let gl = gl::ErrorCheckingGl::wrap(g.clone());
 
-    // DEBUG
-    println!("颜色 {:?}", 颜色);
-
     // 清除背景
     gl.clear_color(颜色.0, 颜色.1, 颜色.2, 颜色.3);
     gl.clear(gl::COLOR_BUFFER_BIT);

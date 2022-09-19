@@ -78,34 +78,11 @@ pub(crate) mod 接口 {
             // 绘制回调
             #[cfg(feature = "gleam")]
             {
-                let 背景色1 = 背景色.clone();
-                let egl_1 = egl.clone();
-                let gl_1 = gl.clone();
-                封装.设绘制回调(Some(Box::new(move || {
-                    RefMut::map(egl_1.borrow_mut(), |a| {
-                        match a {
-                            None => {}
-                            Some(egl) => {
-                                Ref::map(gl_1.borrow(), |a| {
-                                    match a {
-                                        None => {}
-                                        Some(gl) => {
-                                            // DEBUG
-                                            println!("窗口默认绘制");
-
-                                            窗口默认绘制(gl, 背景色1.borrow().clone());
-
-                                            // 绘制结束
-                                            egl.交换缓冲区().unwrap();
-                                        }
-                                    }
-                                    a
-                                });
-                            }
-                        }
-                        a
-                    });
-                })));
+                封装.设绘制回调(Some(造绘制回调(
+                    egl.clone(),
+                    gl.clone(),
+                    背景色.clone(),
+                )));
             }
 
             Self {
@@ -171,5 +148,38 @@ pub(crate) mod 接口 {
         fn 清理(self) {
             // TODO
         }
+    }
+
+    #[cfg(feature = "gleam")]
+    fn 造绘制回调(
+        egl: Rc<RefCell<Option<Egl管理器>>>,
+        gl: Rc<RefCell<Option<Rc<dyn gl::Gl>>>>,
+        背景色: Rc<RefCell<(f32, f32, f32, f32)>>,
+    ) -> Box<dyn FnMut() -> () + 'static> {
+        Box::new(move || {
+            RefMut::map(egl.borrow_mut(), |a| {
+                match a {
+                    None => {}
+                    Some(egl) => {
+                        Ref::map(gl.borrow(), |a| {
+                            match a {
+                                None => {}
+                                Some(gl) => {
+                                    // DEBUG
+                                    println!("窗口默认绘制");
+
+                                    窗口默认绘制(gl, 背景色.borrow().clone());
+
+                                    // 绘制结束
+                                    egl.交换缓冲区().unwrap();
+                                }
+                            }
+                            a
+                        });
+                    }
+                }
+                a
+            });
+        })
     }
 }
