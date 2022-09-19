@@ -9,7 +9,10 @@ mod window;
 mod egl;
 
 pub(crate) mod 接口 {
-    use std::{cell::RefCell, rc::Rc};
+    use std::{
+        cell::{Ref, RefCell, RefMut},
+        rc::Rc,
+    };
 
     #[cfg(feature = "gleam")]
     use gleam::gl;
@@ -21,6 +24,8 @@ pub(crate) mod 接口 {
     use super::window::窗口封装;
     use crate::api::{内部窗口接口, 窗口创建参数};
 
+    #[cfg(feature = "gleam")]
+    use super::egl::窗口默认绘制;
     #[cfg(feature = "egl")]
     use crate::api::Gl类型;
     #[cfg(feature = "egl")]
@@ -38,21 +43,21 @@ pub(crate) mod 接口 {
         封装: 窗口封装,
 
         #[cfg(feature = "egl")]
-        egl: Option<Egl管理器>,
+        egl: Rc<RefCell<Option<Egl管理器>>>,
         #[cfg(feature = "gleam")]
-        gl: Option<Rc<dyn gl::Gl>>,
+        gl: Rc<RefCell<Option<Rc<dyn gl::Gl>>>>,
     }
 
     impl 内部窗口 {
         pub fn new(参数: 窗口创建参数) -> Self {
             let 背景色 = Rc::new(RefCell::new(参数.背景色));
 
-            let mut 封装 = unsafe { 窗口封装::new(&参数.标题).unwrap() };
+            let mut 封装 = unsafe { 窗口封装::new(参数.大小, &参数.标题).unwrap() };
 
             #[cfg(feature = "egl")]
-            let mut egl: Option<Egl管理器> = None;
+            let egl: Rc<RefCell<Option<Egl管理器>>> = Rc::new(RefCell::new(None));
             #[cfg(feature = "gleam")]
-            let mut gl: Option<Rc<dyn gl::Gl>> = None;
+            let gl: Rc<RefCell<Option<Rc<dyn gl::Gl>>>> = Rc::new(RefCell::new(None));
 
             // 初始化 GL
             #[cfg(feature = "egl")]
@@ -62,12 +67,45 @@ pub(crate) mod 接口 {
 
                 #[cfg(feature = "gleam")]
                 {
-                    gl = Some(初始化gleam(&管理器));
+                    gl.replace(Some(初始化gleam(&管理器)));
                 }
                 // 设为当前
                 管理器.设为当前().unwrap();
 
-                egl = Some(管理器);
+                egl.replace(Some(管理器));
+            }
+
+            // 绘制回调
+            #[cfg(feature = "gleam")]
+            {
+                let 背景色1 = 背景色.clone();
+                let egl_1 = egl.clone();
+                let gl_1 = gl.clone();
+                封装.设绘制回调(Some(Box::new(move || {
+                    RefMut::map(egl_1.borrow_mut(), |a| {
+                        match a {
+                            None => {}
+                            Some(egl) => {
+                                Ref::map(gl_1.borrow(), |a| {
+                                    match a {
+                                        None => {}
+                                        Some(gl) => {
+                                            // DEBUG
+                                            println!("窗口默认绘制");
+
+                                            窗口默认绘制(gl, 背景色1.borrow().clone());
+
+                                            // 绘制结束
+                                            egl.交换缓冲区().unwrap();
+                                        }
+                                    }
+                                    a
+                                });
+                            }
+                        }
+                        a
+                    });
+                })));
             }
 
             Self {
@@ -116,12 +154,12 @@ pub(crate) mod 接口 {
 
         #[cfg(feature = "egl")]
         fn 取gl类型(&self) -> Option<Gl类型> {
-            self.egl.as_ref().map(|egl| egl.接口类型())
+            self.egl.borrow().as_ref().map(|egl| egl.接口类型())
         }
 
         #[cfg(feature = "gleam")]
         fn 取gl(&self) -> Option<Rc<dyn gl::Gl>> {
-            self.gl.as_ref().map(|g| g.clone())
+            self.gl.borrow().as_ref().map(|g| g.clone())
         }
 
         fn 主循环(&mut self) {

@@ -37,6 +37,12 @@ glutin 和 winit 功能耦合较高, 分成两个库太麻烦.
   cargo test
   ```
 
++ 代码文档:
+
+  ```
+  cargo doc
+  ```
+
 
 ## 平台支持
 

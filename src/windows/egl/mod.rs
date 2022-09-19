@@ -2,10 +2,12 @@
 
 mod angle;
 
-use std::{env, ffi};
+use std::{env, ffi, rc::Rc};
 
 use glutin_egl_sys::egl;
 use glutin_egl_sys::egl::types::EGLAttrib;
+
+use gleam::gl;
 
 use crate::api::{Gl类型, Gl要求};
 
@@ -130,4 +132,15 @@ impl Egl实现 {
     pub fn 交换缓冲区(&mut self) -> Result<(), String> {
         unsafe { 交换缓冲区(&self.封装) }
     }
+}
+
+pub fn 窗口默认绘制(g: &Rc<dyn gl::Gl>, 颜色: (f32, f32, f32, f32)) {
+    let gl = gl::ErrorCheckingGl::wrap(g.clone());
+
+    // DEBUG
+    println!("颜色 {:?}", 颜色);
+
+    // 清除背景
+    gl.clear_color(颜色.0, 颜色.1, 颜色.2, 颜色.3);
+    gl.clear(gl::COLOR_BUFFER_BIT);
 }

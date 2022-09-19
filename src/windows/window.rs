@@ -1,17 +1,21 @@
 //! 窗口封装
 
-use std::ffi;
+use std::{
+    cell::{RefCell, RefMut},
+    ffi,
+    rc::Rc,
+};
 
 use windows::{
     core::{Error, HSTRING, PCWSTR},
     Win32::Foundation::{GetLastError, HINSTANCE, HWND, LPARAM, LRESULT, WPARAM},
-    Win32::Graphics::Gdi::{GetDC, ValidateRect},
+    Win32::Graphics::Gdi::{GetDC, RedrawWindow, ValidateRect, RDW_INVALIDATE},
     Win32::System::LibraryLoader::GetModuleHandleW,
     Win32::UI::WindowsAndMessaging::{
-        CreateWindowExW, DefWindowProcW, DispatchMessageW, GetMessageW, LoadCursorW,
-        PostQuitMessage, RegisterClassExW, ShowWindow, CS_HREDRAW, CS_VREDRAW, CW_USEDEFAULT,
-        IDC_ARROW, MSG, SW_SHOWNORMAL, WINDOW_EX_STYLE, WM_DESTROY, WM_PAINT, WNDCLASSEXW,
-        WS_OVERLAPPEDWINDOW, WS_VISIBLE,
+        CreateWindowExW, DefWindowProcW, DispatchMessageW, GetMessageW, GetWindowLongPtrW,
+        LoadCursorW, PostQuitMessage, RegisterClassExW, SetWindowLongPtrW, ShowWindow, CS_HREDRAW,
+        CS_VREDRAW, CW_USEDEFAULT, IDC_ARROW, MSG, SW_SHOWNORMAL, WINDOW_EX_STYLE,
+        WINDOW_LONG_PTR_INDEX, WM_DESTROY, WM_PAINT, WNDCLASSEXW, WS_OVERLAPPEDWINDOW, WS_VISIBLE,
     },
 };
 
@@ -35,14 +39,24 @@ impl From<String> for 错误 {
     }
 }
 
+struct 窗口数据 {
+    pub 绘制回调: Rc<RefCell<Option<Box<dyn FnMut() -> () + 'static>>>>,
+}
+
 pub struct 窗口封装 {
     实例: HINSTANCE,
 
     窗口: HWND,
+
+    // 绘制回调函数
+    绘制回调: Rc<RefCell<Option<Box<dyn FnMut() -> () + 'static>>>>,
+
+    // 用于窗口函数访问
+    数据: Box<窗口数据>,
 }
 
 impl 窗口封装 {
-    pub unsafe fn new(标题: &str) -> Result<Self, 错误> {
+    pub unsafe fn new(大小: (i32, i32), 标题: &str) -> Result<Self, 错误> {
         let 实例 = GetModuleHandleW(None)?;
         if 实例.0 == 0 {
             return Err(错误(format!("GetModuleHandleW()  {:?}", 实例)));
@@ -55,6 +69,9 @@ impl 窗口封装 {
         let 窗口类 = WNDCLASSEXW {
             // 注意: cbSize 默认是 0 (Default::default), 需要手动设置正确
             cbSize: std::mem::size_of::<WNDCLASSEXW>() as u32,
+
+            // 每个窗口实例附带的数据字节数 (用于 SetWindowLongPtrW)
+            cbWndExtra: std::mem::size_of::<*const ffi::c_void>() as i32,
 
             hInstance: 实例,
             lpszClassName: 窗口类名,
@@ -83,8 +100,8 @@ impl 窗口封装 {
             WS_OVERLAPPEDWINDOW | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
-            CW_USEDEFAULT,
-            CW_USEDEFAULT,
+            大小.0,
+            大小.1,
             None,
             None,
             实例,
@@ -98,7 +115,34 @@ impl 窗口封装 {
             )));
         }
 
-        Ok(Self { 实例, 窗口 })
+        let 绘制回调: Rc<RefCell<Option<Box<dyn FnMut() -> () + 'static>>>> =
+            Rc::new(RefCell::new(None));
+
+        // 窗口数据
+        let 数据 = Box::new(窗口数据 {
+            绘制回调: 绘制回调.clone(),
+        });
+        // 设置数据指针
+        let 窗口数据指针: *const _ = &*数据;
+        SetWindowLongPtrW(窗口, WINDOW_LONG_PTR_INDEX(0), 窗口数据指针 as isize);
+
+        Ok(Self {
+            实例,
+            窗口,
+            绘制回调,
+            数据,
+        })
+    }
+
+    pub fn 设绘制回调(&mut self, 回调: Option<Box<dyn FnMut() -> () + 'static>>) {
+        self.绘制回调.replace(回调);
+    }
+
+    // 请求重绘窗口
+    pub fn 请求绘制(&mut self) {
+        unsafe {
+            RedrawWindow(self.窗口, None, None, RDW_INVALIDATE);
+        }
     }
 
     #[cfg(feature = "egl")]
@@ -125,10 +169,26 @@ impl 窗口封装 {
 extern "system" fn glw_wndproc(
     窗口: HWND, 消息: u32, w参数: WPARAM, l参数: LPARAM
 ) -> LRESULT {
+    unsafe fn 取窗口数据(窗口: HWND) -> *const 窗口数据 {
+        let 指针 = GetWindowLongPtrW(窗口, WINDOW_LONG_PTR_INDEX(0));
+        指针 as *const 窗口数据
+    }
+
     unsafe {
         match 消息 {
             WM_PAINT => {
-                println!("WM_PAINT");
+                // 绘制回调
+                let 数据 = 取窗口数据(窗口);
+                RefMut::map((*数据).绘制回调.borrow_mut(), |a| {
+                    match a {
+                        None => {}
+                        Some(回调) => {
+                            (回调)();
+                        }
+                    }
+                    a
+                });
+
                 ValidateRect(窗口, None);
                 LRESULT(0)
             }
