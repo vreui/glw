@@ -49,6 +49,10 @@ use wayland::接口 as 内部;
 #[cfg(target_arch = "wasm32")]
 use web::接口 as 内部;
 
+// 重新导出
+#[cfg(target_os = "android")]
+pub use ndk_glue;
+
 // 导出
 pub use api::{窗口, 窗口创建参数};
 

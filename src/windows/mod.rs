@@ -166,7 +166,7 @@ pub(crate) mod 接口 {
                                 None => {}
                                 Some(gl) => {
                                     // DEBUG
-                                    println!("窗口默认绘制");
+                                    //println!("窗口默认绘制");
 
                                     窗口默认绘制(gl, 背景色.borrow().clone());
 

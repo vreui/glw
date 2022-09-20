@@ -42,7 +42,7 @@ impl Egl实现 {
             let 配置 = 找配置(库, 显示, egl::OPENGL_ES3_BIT)?;
 
             let 要求 = match 要求 {
-                Gl要求::Gl => {
+                Gl要求::Gl { .. } => {
                     return Err("Android 平台不支持 OpenGL".to_string());
                 }
                 Gl要求::Gles { gles版本 } => Gl要求::Gles { gles版本 },

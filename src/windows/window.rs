@@ -213,7 +213,7 @@ extern "system" fn glw_wndproc(
 
             WM_PAINT => {
                 // DEBUG
-                println!("WM_PAINT");
+                //println!("WM_PAINT");
 
                 // 绘制回调
                 let 数据 = 取窗口数据(窗口);
