@@ -71,7 +71,8 @@ jobs:
 
       # 主要编译过程 (检查, 测试, 编译)
       - run: cd example/2 && cargo fmt --check
-      - run: cd example/2 && cargo test
+      # TODO test under Android
+      #- run: cd example/2 && cargo test
       - run: cd example/2 && cargo apk build
 
       # 上传编译结果
