@@ -40,6 +40,47 @@ jobs:
           name: libglw.rlib
           path: target/release/libglw.rlib
 
+  build_android:
+    runs-on: ubuntu-latest
+    # 大约用时 5 分钟
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v2
+
+      # cache cargo
+      - uses: actions/cache@v2
+        with:
+          path: ~/.cargo
+          key: ${{ runner.os }}-cargo-apk-1
+
+      # Android ndk
+      - uses: nttld/setup-ndk@v1
+        id: ndk
+        with:
+          ndk-version: r21e
+      # rust 编译工具
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: aarch64-linux-android
+          components: rustfmt, clippy
+      - run: cargo --version
+
+      # cargo-apk
+      - run: cargo install cargo-apk
+
+      # 主要编译过程 (检查, 测试, 编译)
+      - run: cd example/2 && cargo fmt --check
+      - run: cd example/2 && cargo test
+      - run: cd example/2 && cargo apk build
+
+      # 上传编译结果
+      - uses: actions/upload-artifact@v2
+        with:
+          if-no-files-found: error
+          name: ex2.apk
+          path: example/2/target/debug/apk/ex2.apk
+
   build_win:
     runs-on: windows-latest
     # 大约用时 5 分钟
