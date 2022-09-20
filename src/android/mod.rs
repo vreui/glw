@@ -26,6 +26,8 @@ pub(crate) mod 接口 {
     use crate::api::Gl类型;
     #[cfg(feature = "egl")]
     use crate::egl::Egl管理器;
+    #[cfg(feature = "gleam")]
+    use crate::util::造绘制回调;
 
     pub struct 内部窗口 {
         #[allow(dead_code)]
@@ -46,16 +48,24 @@ pub(crate) mod 接口 {
             let 背景色 = Rc::new(RefCell::new(参数.背景色));
 
             #[cfg(feature = "egl")]
-            let egl = Rc::new(RefCell::new(None));
+            let egl: Rc<RefCell<Option<Egl管理器>>> = Rc::new(RefCell::new(None));
             #[cfg(feature = "gleam")]
-            let gl = Rc::new(RefCell::new(None));
+            let gl: Rc<RefCell<Option<Rc<dyn gl::Gl>>>> = Rc::new(RefCell::new(None));
+
+            // 绘制回调
+            #[cfg(not(feature = "gleam"))]
+            let 绘制回调 = Box::new(move || {
+                // TODO
+            });
+            #[cfg(feature = "gleam")]
+            let 绘制回调 = 造绘制回调(egl.clone(), gl.clone(), 背景色.clone());
 
             #[cfg(all(not(feature = "egl"), not(feature = "gleam")))]
-            let mut 胶 = 胶水::new();
+            let mut 胶 = 胶水::new(绘制回调);
             #[cfg(all(feature = "egl", not(feature = "gleam")))]
-            let mut 胶 = 胶水::new(egl.clone());
+            let mut 胶 = 胶水::new(egl.clone(), 绘制回调);
             #[cfg(feature = "gleam")]
-            let mut 胶 = 胶水::new(egl.clone(), gl.clone());
+            let mut 胶 = 胶水::new(egl.clone(), gl.clone(), 绘制回调);
 
             胶.创建窗口(参数);
 

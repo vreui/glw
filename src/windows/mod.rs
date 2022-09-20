@@ -9,10 +9,7 @@ mod window;
 mod egl;
 
 pub(crate) mod 接口 {
-    use std::{
-        cell::{Ref, RefCell, RefMut},
-        rc::Rc,
-    };
+    use std::{cell::RefCell, rc::Rc};
 
     #[cfg(feature = "gleam")]
     use gleam::gl;
@@ -24,14 +21,14 @@ pub(crate) mod 接口 {
     use super::window::窗口封装;
     use crate::api::{内部窗口接口, 窗口创建参数};
 
-    #[cfg(feature = "gleam")]
-    use super::egl::窗口默认绘制;
     #[cfg(feature = "egl")]
     use crate::api::Gl类型;
     #[cfg(feature = "egl")]
     use crate::egl::Egl管理器;
     #[cfg(feature = "gleam")]
     use crate::egl::初始化gleam;
+    #[cfg(feature = "gleam")]
+    use crate::util::造绘制回调;
 
     // TODO 多窗口支持
     pub struct 内部窗口 {
@@ -148,38 +145,5 @@ pub(crate) mod 接口 {
         fn 清理(self) {
             // TODO
         }
-    }
-
-    #[cfg(feature = "gleam")]
-    fn 造绘制回调(
-        egl: Rc<RefCell<Option<Egl管理器>>>,
-        gl: Rc<RefCell<Option<Rc<dyn gl::Gl>>>>,
-        背景色: Rc<RefCell<(f32, f32, f32, f32)>>,
-    ) -> Box<dyn FnMut() -> () + 'static> {
-        Box::new(move || {
-            RefMut::map(egl.borrow_mut(), |a| {
-                match a {
-                    None => {}
-                    Some(egl) => {
-                        Ref::map(gl.borrow(), |a| {
-                            match a {
-                                None => {}
-                                Some(gl) => {
-                                    // DEBUG
-                                    //println!("窗口默认绘制");
-
-                                    窗口默认绘制(gl, 背景色.borrow().clone());
-
-                                    // 绘制结束
-                                    egl.交换缓冲区().unwrap();
-                                }
-                            }
-                            a
-                        });
-                    }
-                }
-                a
-            });
-        })
     }
 }

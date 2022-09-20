@@ -25,6 +25,8 @@ pub struct 胶水 {
     原生窗口: Option<LockReadGuard<NativeWindow>>,
     输入队列: Option<LockReadGuard<InputQueue>>,
 
+    绘制回调: Box<dyn FnMut() -> () + 'static>,
+
     #[cfg(feature = "egl")]
     参数_gl: bool,
     #[cfg(feature = "egl")]
@@ -35,20 +37,25 @@ pub struct 胶水 {
 
 impl 胶水 {
     #[cfg(all(not(feature = "egl"), not(feature = "gleam")))]
-    pub fn new() -> Self {
+    pub fn new(绘制回调: Box<dyn FnMut() -> () + 'static>) -> Self {
         Self {
             原生窗口: None,
             输入队列: None,
+            绘制回调,
         }
     }
 
     #[cfg(all(feature = "egl", not(feature = "gleam")))]
-    pub fn new(egl: Rc<RefCell<Option<Egl管理器>>>) -> Self {
+    pub fn new(
+        egl: Rc<RefCell<Option<Egl管理器>>>,
+        绘制回调: Box<dyn FnMut() -> () + 'static>,
+    ) -> Self {
         Self {
             egl,
             参数_gl: false,
             原生窗口: None,
             输入队列: None,
+            绘制回调,
         }
     }
 
@@ -56,6 +63,7 @@ impl 胶水 {
     pub fn new(
         egl: Rc<RefCell<Option<Egl管理器>>>,
         gl: Rc<RefCell<Option<Rc<dyn gl::Gl>>>>,
+        绘制回调: Box<dyn FnMut() -> () + 'static>,
     ) -> Self {
         Self {
             egl,
@@ -63,6 +71,7 @@ impl 胶水 {
             参数_gl: false,
             原生窗口: None,
             输入队列: None,
+            绘制回调,
         }
     }
 
@@ -83,10 +92,33 @@ impl 胶水 {
     fn 窗口已创建(&mut self) {
         self.原生窗口 = ndk_glue::native_window();
 
-        // 初始化 GL
         #[cfg(feature = "egl")]
         {
-            // TODO
+            let 原生窗口: &NativeWindow = &self.原生窗口.as_ref().unwrap();
+
+            if self.egl.borrow().is_none() {
+                // 初始化 GL
+                let 实现 = Egl实现::new(GL版本, 原生窗口).unwrap();
+                let mut egl = Egl管理器::new(实现).unwrap();
+                // 设为当前
+                egl.设为当前().unwrap();
+
+                #[cfg(feature = "gleam")]
+                {
+                    // 初始化 gleam
+                    let gl = 初始化gleam(&egl);
+                    self.gl.replace(Some(gl));
+                }
+
+                self.egl.replace(Some(egl));
+            } else {
+                // 重新创建 WindowSurface
+                let mut egl1 = self.egl.borrow_mut();
+                let egl = egl1.as_mut().unwrap();
+                egl.取实现().重新创建表面(原生窗口).unwrap();
+                // 设为当前
+                egl.设为当前().unwrap();
+            }
         }
     }
 
@@ -97,7 +129,7 @@ impl 胶水 {
 
     // Event::WindowRedrawNeeded
     fn 窗口需要重绘(&mut self) {
-        // TODO
+        (self.绘制回调)();
     }
 
     // Event::WindowDestroyed

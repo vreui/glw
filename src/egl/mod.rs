@@ -36,6 +36,10 @@ impl Egl管理器 {
         Ok(Self { egl, 平台 })
     }
 
+    pub fn 取实现(&mut self) -> &mut Egl实现 {
+        &mut self.平台
+    }
+
     /// 创建的 API 类型
     pub fn 接口类型(&self) -> Gl类型 {
         self.平台.接口类型()
