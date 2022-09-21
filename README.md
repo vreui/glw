@@ -46,7 +46,7 @@ glutin 和 winit 功能耦合较高, 分成两个库太麻烦.
 
 ## 平台支持
 
-glw (计划) 支持下列平台 (协议):
+本库支持下列平台 (协议):
 
 + `wayland` (GNU/Linux)
 
@@ -60,11 +60,38 @@ glw (计划) 支持下列平台 (协议):
 
   在此平台使用 ANGLE 作为 OpenGL ES / EGL 兼容层.
 
-+ `web` (wasm)
++ (尚未实现) `web` (wasm)
 
   此平台目前不能使用 WebRender (vreui), 因此优先级较低.
 
 某果平台太过封闭, 且不适用于穷人, 因此不考虑支持.
+
+
+## cargo features
+
++ `egl` (默认启用)
+
+  启用 EGL (OpenGL / OpenGL ES) 功能.
+
++ `gleam` (依赖 `egl`, 默认启用)
+
+  启用 gleam 支持.
+
+  [gleam](https://github.com/servo/gleam) 是 [WebRender](https://github.com/servo/webrender)
+  使用的 OpenGL / OpenGL ES 绑定.
+  本库内置了 gleam 的初始化功能.
+
++ `ndk_glue` (默认启用)
+
+  Android 平台:
+  使用 [`ndk-glue`](https://crates.io/crates/ndk-glue)
+  作为初始化代码 (单窗口应用).
+
++ `android_jni`
+
+  Android 平台: 嵌入 java 代码中 (多窗口).
+
+  (每个窗口一个 GL 绘制线程)
 
 
 ## 感谢
@@ -77,6 +104,9 @@ glw (计划) 支持下列平台 (协议):
 
 + wayland-rs
   <https://github.com/smithay/wayland-rs>
+
++ android-ndk-rs
+  <https://github.com/rust-windowing/android-ndk-rs>
 
 + ANGLE - Almost Native Graphics Layer Engine
   <https://github.com/google/angle>

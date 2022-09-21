@@ -11,14 +11,8 @@ compile_error!("feature gleam 依赖 egl");
 #[allow(unused_imports)]
 #[macro_use]
 extern crate log;
-#[allow(unused_imports)]
-#[macro_use]
-extern crate bitflags;
 
-extern crate instant;
-extern crate mint;
 extern crate once_cell;
-extern crate raw_window_handle;
 
 #[cfg(feature = "egl")]
 extern crate libloading;
@@ -50,7 +44,7 @@ use wayland::接口 as 内部;
 use web::接口 as 内部;
 
 // 重新导出
-#[cfg(target_os = "android")]
+#[cfg(all(target_os = "android", feature = "ndk_glue"))]
 pub use ndk_glue;
 
 // 导出

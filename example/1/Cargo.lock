@@ -129,18 +129,14 @@ dependencies = [
 name = "glw"
 version = "0.1.0"
 dependencies = [
- "bitflags",
  "gleam",
  "glutin_egl_sys",
- "instant",
  "libloading",
  "log",
- "mint",
  "ndk",
  "ndk-glue",
  "nix 0.25.0",
  "once_cell",
- "raw-window-handle",
  "wayland-client",
  "wayland-cursor",
  "wayland-egl",
@@ -154,15 +150,6 @@ name = "ident_case"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
-
-[[package]]
-name = "instant"
-version = "0.1.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a5bbe824c507c5da5956355e86a746d82e0e1464f65d862cc5e71da70e94b2c"
-dependencies = [
- "cfg-if",
-]
 
 [[package]]
 name = "jni-sys"
@@ -246,12 +233,6 @@ name = "minimal-lexical"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
-
-[[package]]
-name = "mint"
-version = "0.5.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e53debba6bda7a793e5f99b8dacf19e626084f525f7829104ba9898f367d85ff"
 
 [[package]]
 name = "ndk"

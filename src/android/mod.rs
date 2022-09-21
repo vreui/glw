@@ -1,13 +1,17 @@
 //! android 平台支持
 
 extern crate ndk;
+
+#[cfg(feature = "ndk_glue")]
 extern crate ndk_glue;
 
-mod glue;
 mod t;
 
 #[cfg(feature = "egl")]
 mod egl;
+
+#[cfg(feature = "ndk_glue")]
+mod glue;
 
 pub(crate) mod 接口 {
     use std::{cell::RefCell, rc::Rc};
@@ -19,8 +23,10 @@ pub(crate) mod 接口 {
     #[cfg(feature = "egl")]
     pub use super::egl::Egl实现;
 
-    use super::glue::胶水;
     use crate::api::{内部窗口接口, 窗口创建参数};
+
+    #[cfg(feature = "ndk_glue")]
+    use super::glue::胶水;
 
     #[cfg(feature = "egl")]
     use crate::api::Gl类型;
@@ -35,6 +41,7 @@ pub(crate) mod 接口 {
 
         背景色: Rc<RefCell<(f32, f32, f32, f32)>>,
 
+        #[cfg(feature = "ndk_glue")]
         胶: 胶水,
 
         #[cfg(feature = "egl")]
@@ -60,18 +67,23 @@ pub(crate) mod 接口 {
             #[cfg(feature = "gleam")]
             let 绘制回调 = 造绘制回调(egl.clone(), gl.clone(), 背景色.clone());
 
-            #[cfg(all(not(feature = "egl"), not(feature = "gleam")))]
+            #[cfg(all(feature = "ndk_glue", not(feature = "egl"), not(feature = "gleam")))]
             let mut 胶 = 胶水::new(绘制回调);
-            #[cfg(all(feature = "egl", not(feature = "gleam")))]
+            #[cfg(all(feature = "ndk_glue", feature = "egl", not(feature = "gleam")))]
             let mut 胶 = 胶水::new(egl.clone(), 绘制回调);
-            #[cfg(feature = "gleam")]
+            #[cfg(all(feature = "ndk_glue", feature = "gleam"))]
             let mut 胶 = 胶水::new(egl.clone(), gl.clone(), 绘制回调);
 
-            胶.创建窗口(参数);
+            #[cfg(feature = "ndk_glue")]
+            {
+                胶.创建窗口(参数);
+            }
 
             Self {
                 非线程安全: Rc::new(()),
                 背景色,
+
+                #[cfg(feature = "ndk_glue")]
                 胶,
 
                 #[cfg(feature = "egl")]
@@ -119,6 +131,7 @@ pub(crate) mod 接口 {
             self.gl.borrow().as_ref().map(|g| g.clone())
         }
 
+        #[cfg(feature = "ndk_glue")]
         fn 主循环(&mut self) {
             self.胶.主循环();
         }
