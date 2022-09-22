@@ -16,6 +16,10 @@ glutin 和 winit 功能耦合较高, 分成两个库太麻烦.
 本库不对各个平台的功能做太多的跨平台抽象和封装.
 大部分平台的功能直接原样暴露.
 
+glw 的目标是: 提供 EGL (OpenGL / OpenGL ES) 和窗口的最小功能集.
+同时提供扩展能力, 具体平台的更多功能可以委托给别的库.
+比如 [vre-dt](https://github.com/vreui/vre-dt), [vre-apk](https://github.com/vreui/vre-dt).
+
 
 ## 编译开发
 
